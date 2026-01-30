@@ -38,7 +38,7 @@ fn run() -> Result<(), String> {
         return Ok(());
       }
       "echo" => {
-        println!("{}", input.collect::<String>());
+        println!("{}", input.collect::<Vec<&str>>().join(" "));
       }
       _ => {
         println!("{SHELL_NAME}: command not found: {}", command);
