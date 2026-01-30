@@ -1,11 +1,11 @@
-use ase::PROMPT;
+use ase::{PROMPT, SHELL_NAME};
 use std::io::{self, Write};
 
 fn main() {
   let res_code = match run() {
     Ok(_) => 0,
     Err(err) => {
-      println!("{err}");
+      println!("{SHELL_NAME}: {err}");
       1
     }
   };
@@ -23,12 +23,18 @@ fn run() -> Result<(), String> {
     io::stdout().flush().unwrap();
 
     // Read
-    let mut command = "".to_string();
-    io::stdin().read_line(&mut command).unwrap();
+    let mut input = "".to_string();
+    io::stdin().read_line(&mut input).unwrap();
 
-    // Eval
+    let mut input = input.trim().split_whitespace();
+    let command = input.next().unwrap();
+
+    if command == "exit" {
+      println!("Ó dà bọ̀! \n{SHELL_NAME} has finished");
+      return Ok(());
+    }
 
     // Print
-    println!("{}: command not found", command.trim());
+    println!("{SHELL_NAME}: command not found: {}", command);
   }
 }
