@@ -27,14 +27,22 @@ fn run() -> Result<(), String> {
     io::stdin().read_line(&mut input).unwrap();
 
     let mut input = input.trim().split_whitespace();
-    let command = input.next().unwrap();
+    let Some(command) = input.next() else {
+      continue;
+    };
 
-    if command == "exit" {
-      println!("Ó dà bọ̀! \n{SHELL_NAME} has finished");
-      return Ok(());
-    }
-
-    // Print
-    println!("{SHELL_NAME}: command not found: {}", command);
+    // evaluate
+    match command {
+      "exit" => {
+        println!("Ó dà bọ̀! \n{SHELL_NAME} has finished");
+        return Ok(());
+      }
+      "echo" => {
+        println!("{}", input.collect::<String>());
+      }
+      _ => {
+        println!("{SHELL_NAME}: command not found: {}", command);
+      }
+    };
   }
 }
