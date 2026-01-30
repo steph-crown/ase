@@ -1,7 +1,8 @@
+use ase::PROMPT;
 use std::io::{self, Write};
 
 fn main() {
-    print!("$ ");
+    print!("{}", PROMPT);
     io::stdout().flush().unwrap();
 
     let mut command = "".to_string();
