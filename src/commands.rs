@@ -14,6 +14,26 @@ pub enum Cmd {
 }
 
 impl Cmd {
+  /// Build a Cmd from already-parsed command name and args (e.g. from main).
+  pub fn from_parts(cmd_name: &str, args: Vec<String>) -> Self {
+    match cmd_name {
+      "exit" => Cmd::Exit(0),
+      "echo" => Cmd::Echo(Command::new(cmd_name, None, args)),
+      "type" => Cmd::Type(Command::new(cmd_name, None, args)),
+      _ => {
+        if let Some(path_buf) = find_executable(cmd_name) {
+          let path_str = path_buf
+            .into_os_string()
+            .into_string()
+            .unwrap_or_else(|_| String::new());
+          Cmd::Exec(Command::new(cmd_name, Some(path_str), args))
+        } else {
+          Cmd::Unknown(Command::new(cmd_name, None, args))
+        }
+      }
+    }
+  }
+
   pub fn try_as_command(&self) -> anyhow::Result<Command> {
     match self {
       Cmd::Exit(_) => Err(anyhow!("exit cmd")),
@@ -50,26 +70,6 @@ impl Command {
       .spawn()?;
     child.wait()?;
     Ok(())
-  }
-}
-
-/// Build a Cmd from already-parsed command name and args (e.g. from main).
-pub fn cmd_from(cmd_name: &str, args: Vec<String>) -> Cmd {
-  match cmd_name {
-    "exit" => Cmd::Exit(0),
-    "echo" => Cmd::Echo(Command::new(cmd_name, None, args)),
-    "type" => Cmd::Type(Command::new(cmd_name, None, args)),
-    _ => {
-      if let Some(path_buf) = find_executable(cmd_name) {
-        let path_str = path_buf
-          .into_os_string()
-          .into_string()
-          .unwrap_or_else(|_| String::new());
-        Cmd::Exec(Command::new(cmd_name, Some(path_str), args))
-      } else {
-        Cmd::Unknown(Command::new(cmd_name, None, args))
-      }
-    }
   }
 }
 

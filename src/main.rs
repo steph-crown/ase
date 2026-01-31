@@ -27,7 +27,7 @@ fn run() -> Result<(), String> {
     };
 
     let args: Vec<String> = input.map(|s| s.to_string()).collect();
-    let cmd = cmd_from(command, args);
+    let cmd = Cmd::from_parts(command, args);
 
     match cmd {
       Cmd::Exit(_) => {
