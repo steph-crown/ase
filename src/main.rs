@@ -1,4 +1,4 @@
-use ase::{PROMPT, SHELL_NAME, commands::resolve_types};
+use ase::{PROMPT, SHELL_NAME, commands::*};
 use std::io::{self, Write};
 
 fn main() {
@@ -14,15 +14,10 @@ fn main() {
 }
 
 fn run() -> Result<(), String> {
-  // REPL (Read-Eval-Print-Loop)
-
-  // loop
   loop {
-    // Print
     print!("{}", PROMPT);
     io::stdout().flush().unwrap();
 
-    // Read
     let mut input = "".to_string();
     io::stdin().read_line(&mut input).unwrap();
 
@@ -31,22 +26,26 @@ fn run() -> Result<(), String> {
       continue;
     };
 
-    // evaluate
-    match command {
-      "exit" => {
+    let args: Vec<String> = input.map(|s| s.to_string()).collect();
+    let cmd = cmd_from(command, args);
+
+    match cmd {
+      Cmd::Exit(_) => {
         println!("Ó dà bọ̀! \n{SHELL_NAME} has finished");
         return Ok(());
       }
-      "echo" => {
-        println!("{}", input.collect::<Vec<&str>>().join(" "));
+      Cmd::Echo(c) => {
+        println!("{}", c.args.join(" "));
       }
-      "type" => {
-        println!("{}", resolve_types(input));
+      Cmd::Type(c) => {
+        println!("{}", resolve_types(c.args.join(" ").split_whitespace()));
       }
-      //
-      _ => {
-        println!("{SHELL_NAME}: command not found: {}", command);
+      Cmd::Exec(c) => {
+        c.run().map_err(|e| e.to_string())?;
       }
-    };
+      Cmd::Unknown(c) => {
+        println!("{SHELL_NAME}: command not found: {}", c.name);
+      }
+    }
   }
 }
