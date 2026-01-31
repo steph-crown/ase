@@ -1,4 +1,4 @@
-use ase::{PROMPT, SHELL_NAME};
+use ase::{PROMPT, SHELL_NAME, commands::resolve_types};
 use std::io::{self, Write};
 
 fn main() {
@@ -40,7 +40,10 @@ fn run() -> Result<(), String> {
       "echo" => {
         println!("{}", input.collect::<Vec<&str>>().join(" "));
       }
-      "type" => {}
+      "type" => {
+        println!("{}", resolve_types(input));
+      }
+      //
       _ => {
         println!("{SHELL_NAME}: command not found: {}", command);
       }
