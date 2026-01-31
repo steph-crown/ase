@@ -1,4 +1,6 @@
-use std::str::SplitWhitespace;
+use std::{env, path::PathBuf, str::SplitWhitespace};
+
+use pathsearch::find_executable_in_path;
 
 enum Builtin {
   Cd,
@@ -22,8 +24,17 @@ pub fn resolve_types(commands: SplitWhitespace<'_>) -> String {
   commands
     .map(|cmd| match Builtin::from_str(cmd) {
       Some(_) => format!("{cmd} is a shell builtin"),
-      None => format!("{cmd} not found"),
+      None => {
+        let Some(path) = find_executable(cmd) else {
+          return format!("{cmd}: not found");
+        };
+        format!("{cmd} is {}", path.display())
+      }
     })
     .collect::<Vec<String>>()
     .join("\n")
+}
+
+fn find_executable(cmd: &str) -> Option<PathBuf> {
+  find_executable_in_path(cmd)
 }
