@@ -125,7 +125,5 @@ pub fn change_dir(target: &str) -> anyhow::Result<()> {
     env::set_var("PWD", updated_cwd);
   }
 
-  println!("new path {}", path.display());
-
   Ok(())
 }
