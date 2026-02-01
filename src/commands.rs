@@ -117,6 +117,11 @@ pub fn change_dir(target: &str) -> anyhow::Result<()> {
 
   let path = Path::new(&new_path);
 
+  if !path.exists() {
+    println!("cd: {target}: No such file or directory");
+    return Ok(());
+  }
+
   env::set_current_dir(path).map_err(|e| anyhow!("àṣẹ: cd: {}: {}", target, e))?;
 
   let updated_cwd = env::current_dir()?;
