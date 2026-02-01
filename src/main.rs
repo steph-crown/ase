@@ -1,4 +1,4 @@
-use ase::{PROMPT, SHELL_NAME, commands::*};
+use ase::{PROMPT, SHELL_NAME, commands::*, utils::get_pwd};
 use std::io::{self, Write};
 
 fn main() {
@@ -42,6 +42,10 @@ fn run() -> Result<(), String> {
       }
       Cmd::Exec(c) => {
         c.run().map_err(|e| e.to_string())?;
+      }
+      Cmd::Pwd => {
+        let dir = get_pwd();
+        println!("{}", dir.display());
       }
       Cmd::Unknown(c) => {
         println!("{SHELL_NAME}: command not found: {}", c.name);

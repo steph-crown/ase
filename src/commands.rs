@@ -1,6 +1,5 @@
 use std::{path::PathBuf, str::SplitWhitespace};
 
-use anyhow::anyhow;
 use pathsearch::find_executable_in_path;
 use strum::{Display, EnumIs, EnumTryAs};
 
@@ -10,6 +9,7 @@ pub enum Cmd {
   Exit(u8),
   Type(Command),
   Exec(Command),
+  Pwd,
   Unknown(Command),
 }
 
@@ -20,6 +20,7 @@ impl Cmd {
       "exit" => Cmd::Exit(0),
       "echo" => Cmd::Echo(Command::new(cmd_name, None, args)),
       "type" => Cmd::Type(Command::new(cmd_name, None, args)),
+      "pwd" => Cmd::Pwd,
       _ => {
         if let Some(path_buf) = find_executable(cmd_name) {
           let path_str = path_buf
@@ -34,15 +35,15 @@ impl Cmd {
     }
   }
 
-  pub fn try_as_command(&self) -> anyhow::Result<Command> {
-    match self {
-      Cmd::Exit(_) => Err(anyhow!("exit cmd")),
-      Cmd::Echo(cmd) => Ok(cmd.clone()),
-      Cmd::Type(cmd) => Ok(cmd.clone()),
-      Cmd::Exec(cmd) => Ok(cmd.clone()),
-      Cmd::Unknown(cmd) => Ok(cmd.clone()),
-    }
-  }
+  // pub fn try_as_command(&self) -> anyhow::Result<Command> {
+  //   match self {
+  //     Cmd::Exit(_) => Err(anyhow!("exit cmd")),
+  //     Cmd::Echo(cmd) => Ok(cmd.clone()),
+  //     Cmd::Type(cmd) => Ok(cmd.clone()),
+  //     Cmd::Exec(cmd) => Ok(cmd.clone()),
+  //     Cmd::Unknown(cmd) => Ok(cmd.clone()),
+  //   }
+  // }
 }
 
 #[derive(Debug, PartialEq, Clone)]
