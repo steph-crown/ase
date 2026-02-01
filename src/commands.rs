@@ -1,11 +1,16 @@
-use std::{path::PathBuf, str::SplitWhitespace};
+use std::{
+  env,
+  path::{Path, PathBuf},
+  str::SplitWhitespace,
+};
 
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 use pathsearch::find_executable_in_path;
 use strum::{Display, EnumIs, EnumTryAs};
 
 #[derive(Debug, PartialEq, EnumIs, EnumTryAs, Display)]
 pub enum Cmd {
+  Cd(Command),
   Echo(Command),
   Exit(u8),
   Type(Command),
@@ -18,6 +23,7 @@ impl Cmd {
   /// Build a Cmd from already-parsed command name and args (e.g. from main).
   pub fn from_parts(cmd_name: &str, args: Vec<String>) -> Self {
     match cmd_name {
+      "cd" => Cmd::Cd(Command::new(cmd_name, None, args)),
       "exit" => Cmd::Exit(0),
       "echo" => Cmd::Echo(Command::new(cmd_name, None, args)),
       "type" => Cmd::Type(Command::new(cmd_name, None, args)),
@@ -100,4 +106,28 @@ pub fn resolve_types(commands: SplitWhitespace<'_>) -> String {
 
 pub fn find_executable(cmd: &str) -> Option<PathBuf> {
   find_executable_in_path(cmd)
+}
+
+pub fn change_dir(target: &str) -> anyhow::Result<()> {
+  let new_path = if target.is_empty() || target == "~" {
+    env::var("HOME").map_err(|_| anyhow!("àṣẹ: HOME not set").context("reading HOME variable"))?
+  } else {
+    target.to_string()
+  };
+
+  let path = Path::new(&new_path);
+
+  env::set_current_dir(path).map_err(|e| anyhow!("àṣẹ: cd: {}: {}", target, e))?;
+
+  // In your change_directory function:
+  let updated_cwd = env::current_dir()?;
+
+  unsafe {
+    // We wrap this in unsafe because set_var is not thread-safe
+    env::set_var("PWD", updated_cwd);
+  }
+
+  println!("new path {}", path.display());
+
+  Ok(())
 }

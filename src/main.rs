@@ -1,4 +1,8 @@
-use ase::{PROMPT, SHELL_NAME, commands::*, utils::get_pwd};
+use ase::{
+  SHELL_NAME,
+  commands::*,
+  utils::{get_prompt, get_pwd},
+};
 use std::io::{self, Write};
 
 use anyhow::Context;
@@ -17,7 +21,7 @@ fn main() {
 
 fn run() -> anyhow::Result<()> {
   loop {
-    print!("{}", PROMPT);
+    print!("{}", get_prompt());
     io::stdout().flush().context("flush stdout")?;
 
     let mut input = String::new();
@@ -44,6 +48,9 @@ fn run() -> anyhow::Result<()> {
       }
       Cmd::Exec(c) => {
         c.run()?;
+      }
+      Cmd::Cd(c) => {
+        change_dir(&c.args[0])?;
       }
       Cmd::Pwd => {
         let dir = get_pwd().context("get current directory")?;
