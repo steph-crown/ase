@@ -119,11 +119,9 @@ pub fn change_dir(target: &str) -> anyhow::Result<()> {
 
   env::set_current_dir(path).map_err(|e| anyhow!("àṣẹ: cd: {}: {}", target, e))?;
 
-  // In your change_directory function:
   let updated_cwd = env::current_dir()?;
 
   unsafe {
-    // We wrap this in unsafe because set_var is not thread-safe
     env::set_var("PWD", updated_cwd);
   }
 
