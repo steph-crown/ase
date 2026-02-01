@@ -1,5 +1,6 @@
 use std::{path::PathBuf, str::SplitWhitespace};
 
+use anyhow::Context;
 use pathsearch::find_executable_in_path;
 use strum::{Display, EnumIs, EnumTryAs};
 
@@ -68,8 +69,11 @@ impl Command {
     let program = self.path.as_deref().unwrap_or(&self.name);
     let mut child = std::process::Command::new(program)
       .args(&self.args)
-      .spawn()?;
-    child.wait()?;
+      .spawn()
+      .with_context(|| format!("failed to spawn `{program}`"))?;
+    child
+      .wait()
+      .with_context(|| format!("failed to wait for `{program}`"))?;
     Ok(())
   }
 }

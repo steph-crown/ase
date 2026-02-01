@@ -1,5 +1,7 @@
-use std::{env, path::PathBuf};
+use std::path::PathBuf;
 
-pub fn get_pwd() -> PathBuf {
-  env::current_dir().expect("àṣẹ: could not retrieve current working directory")
+use anyhow::Context;
+
+pub fn get_pwd() -> anyhow::Result<PathBuf> {
+  std::env::current_dir().context("could not retrieve current working directory")
 }

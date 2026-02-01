@@ -1,11 +1,13 @@
 use ase::{PROMPT, SHELL_NAME, commands::*, utils::get_pwd};
 use std::io::{self, Write};
 
+use anyhow::Context;
+
 fn main() {
   let res_code = match run() {
     Ok(_) => 0,
     Err(err) => {
-      println!("{SHELL_NAME}: {err}");
+      eprintln!("{SHELL_NAME}: {err:#}");
       1
     }
   };
@@ -13,13 +15,13 @@ fn main() {
   std::process::exit(res_code);
 }
 
-fn run() -> Result<(), String> {
+fn run() -> anyhow::Result<()> {
   loop {
     print!("{}", PROMPT);
-    io::stdout().flush().unwrap();
+    io::stdout().flush().context("flush stdout")?;
 
-    let mut input = "".to_string();
-    io::stdin().read_line(&mut input).unwrap();
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).context("read stdin")?;
 
     let mut input = input.trim().split_whitespace();
     let Some(command) = input.next() else {
@@ -41,10 +43,10 @@ fn run() -> Result<(), String> {
         println!("{}", resolve_types(c.args.join(" ").split_whitespace()));
       }
       Cmd::Exec(c) => {
-        c.run().map_err(|e| e.to_string())?;
+        c.run()?;
       }
       Cmd::Pwd => {
-        let dir = get_pwd();
+        let dir = get_pwd().context("get current directory")?;
         println!("{}", dir.display());
       }
       Cmd::Unknown(c) => {
