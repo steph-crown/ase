@@ -1,63 +1,56 @@
 use ase::{
   SHELL_NAME,
-  commands::*,
-  utils::{get_prompt, get_pwd},
+  commands::{Cmd, RunResult, needs_more_input},
+  utils::get_prompt,
 };
 use std::io::{self, Write};
 
 use anyhow::Context;
 
+const CONTINUATION_PROMPT: &str = "> ";
+
 fn main() {
-  let res_code = match run() {
-    Ok(_) => 0,
+  let code = match run() {
+    Ok(exit_code) => exit_code as i32,
     Err(err) => {
       eprintln!("{SHELL_NAME}: {err:#}");
       1
     }
   };
-
-  std::process::exit(res_code);
+  std::process::exit(code);
 }
 
-fn run() -> anyhow::Result<()> {
+fn run() -> anyhow::Result<u8> {
+  let mut buffer = String::new();
+
   loop {
-    print!("{}", get_prompt());
+    let prompt = if buffer.is_empty() {
+      get_prompt()
+    } else {
+      CONTINUATION_PROMPT.to_string()
+    };
+    print!("{prompt}");
     io::stdout().flush().context("flush stdout")?;
 
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).context("read stdin")?;
+    let mut line = String::new();
+    io::stdin().read_line(&mut line).context("read stdin")?;
+    buffer.push_str(&line);
 
-    let mut input = input.trim().split_whitespace();
-    let Some(command) = input.next() else {
+    if needs_more_input(&buffer) {
+      continue;
+    }
+
+    let Some(cmd) = Cmd::from_input(&buffer)? else {
+      buffer.clear();
       continue;
     };
+    buffer.clear();
 
-    let args: Vec<String> = input.map(|s| s.to_string()).collect();
-    let cmd = Cmd::from_parts(command, args);
-
-    match cmd {
-      Cmd::Exit(_) => {
+    match cmd.run(SHELL_NAME)? {
+      RunResult::Continue => {}
+      RunResult::Exit(code) => {
         println!("Ó dà bọ̀! \n{SHELL_NAME} has finished");
-        return Ok(());
-      }
-      Cmd::Echo(c) => {
-        println!("{}", c.args.join(" "));
-      }
-      Cmd::Type(c) => {
-        println!("{}", resolve_types(c.args.join(" ").split_whitespace()));
-      }
-      Cmd::Exec(c) => {
-        c.run()?;
-      }
-      Cmd::Cd(c) => {
-        change_dir(&c.args[0])?;
-      }
-      Cmd::Pwd => {
-        let dir = get_pwd().context("get current directory")?;
-        println!("{}", dir.display());
-      }
-      Cmd::Unknown(c) => {
-        println!("{SHELL_NAME}: command not found: {}", c.name);
+        return Ok(code);
       }
     }
   }
