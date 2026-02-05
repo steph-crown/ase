@@ -63,7 +63,11 @@ impl Cmd {
       "type" => Cmd::Type(Command::new(cmd_name, None, args)),
       "pwd" => Cmd::Pwd,
       _ => {
-        if let Some(path_buf) = find_executable(cmd_name) {
+        // If the command contains a path separator (e.g. "./script", "bin/foo"),
+        // treat it as a direct path instead of searching PATH, like real shells do.
+        if cmd_name.contains('/') {
+          Cmd::Exec(Command::new(cmd_name, Some(cmd_name.to_string()), args))
+        } else if let Some(path_buf) = find_executable(cmd_name) {
           let path_str = path_buf
             .into_os_string()
             .into_string()
@@ -88,7 +92,9 @@ impl Cmd {
         Ok(RunResult::Continue)
       }
       Cmd::Exec(c) => {
-        c.run()?;
+        if let Err(err) = c.run() {
+          eprintln!("{shell_name}: {err}");
+        }
         Ok(RunResult::Continue)
       }
       Cmd::Cd(c) => {
