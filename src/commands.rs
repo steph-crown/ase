@@ -3,7 +3,7 @@
 use std::{
   env,
   fs::File,
-  io::{self, Write},
+  io::Write,
   path::{Path, PathBuf},
   process::Stdio,
 };
@@ -11,6 +11,12 @@ use std::{
 use anyhow::Context;
 use pathsearch::find_executable_in_path;
 use strum::{Display, EnumIs, EnumTryAs};
+
+mod parse;
+mod targets;
+
+pub use parse::{ParsedInvocation, needs_more_input};
+pub use targets::{StderrTarget, StdoutTarget, open_stderr_writer, open_writer};
 
 #[derive(Debug, PartialEq)]
 pub enum RunResult {
@@ -22,18 +28,6 @@ const BUILTIN_NAMES: &[&str] = &["cd", "echo", "exit", "type", "pwd"];
 
 fn is_builtin(name: &str) -> bool {
   BUILTIN_NAMES.contains(&name)
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum StdoutTarget {
-  Stdout,
-  File(PathBuf),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum StderrTarget {
-  Stderr,
-  File(PathBuf),
 }
 
 #[derive(Debug, PartialEq, EnumIs, EnumTryAs, Display)]
@@ -66,74 +60,6 @@ pub enum Cmd {
     cmd: Command,
     stderr: StderrTarget,
   },
-}
-
-struct ParsedInvocation {
-  cmd_name: String,
-  args: Vec<String>,
-  stdout: StdoutTarget,
-  stderr: StderrTarget,
-}
-
-impl ParsedInvocation {
-  fn from_tokens(tokens: Vec<String>) -> Option<Self> {
-    let mut iter = tokens.into_iter();
-    let cmd_name = iter.next()?;
-    let rest: Vec<String> = iter.collect();
-
-    let mut stdout = StdoutTarget::Stdout;
-    let mut stderr = StderrTarget::Stderr;
-    let mut args = Vec::new();
-    let mut i = 0;
-
-    while i < rest.len() {
-      match rest[i].as_str() {
-        ">" | "1>" => {
-          if i + 1 < rest.len() {
-            stdout = StdoutTarget::File(PathBuf::from(rest[i + 1].clone()));
-            i += 2;
-            continue;
-          } else {
-            args.push(rest[i].clone());
-            i += 1;
-            continue;
-          }
-        }
-        "2>" => {
-          if i + 1 < rest.len() {
-            stderr = StderrTarget::File(PathBuf::from(rest[i + 1].clone()));
-            i += 2;
-            continue;
-          } else {
-            args.push(rest[i].clone());
-            i += 1;
-            continue;
-          }
-        }
-        _ => {
-          args.push(rest[i].clone());
-          i += 1;
-        }
-      }
-    }
-
-    if args.is_empty() && rest.is_empty() {
-      return None;
-    }
-
-    Some(ParsedInvocation {
-      cmd_name,
-      args,
-      stdout,
-      stderr,
-    })
-  }
-}
-
-/// True when input has unclosed quote(s); caller should show continuation prompt and read more.
-pub fn needs_more_input(raw: &str) -> bool {
-  let r = raw.trim();
-  !r.is_empty() && shlex::split(r).is_none()
 }
 
 impl Cmd {
@@ -372,20 +298,6 @@ pub fn change_dir(target: &str) -> anyhow::Result<()> {
 pub fn echo_args<W: Write>(args: &[String], out: &mut W) -> anyhow::Result<()> {
   writeln!(out, "{}", args.join(" "))?;
   Ok(())
-}
-
-fn open_writer(target: &StdoutTarget) -> anyhow::Result<Box<dyn Write>> {
-  match target {
-    StdoutTarget::Stdout => Ok(Box::new(io::stdout())),
-    StdoutTarget::File(path) => Ok(Box::new(File::create(path)?)),
-  }
-}
-
-fn open_stderr_writer(target: &StderrTarget) -> anyhow::Result<Box<dyn Write>> {
-  match target {
-    StderrTarget::Stderr => Ok(Box::new(io::stderr())),
-    StderrTarget::File(path) => Ok(Box::new(File::create(path)?)),
-  }
 }
 
 #[cfg(test)]
