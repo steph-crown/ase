@@ -27,9 +27,31 @@ impl ParsedInvocation {
 
     while i < rest.len() {
       match rest[i].as_str() {
+        ">>" | "1>>" => {
+          if i + 1 < rest.len() {
+            stdout = StdoutTarget::Append(PathBuf::from(rest[i + 1].clone()));
+            i += 2;
+            continue;
+          } else {
+            args.push(rest[i].clone());
+            i += 1;
+            continue;
+          }
+        }
         ">" | "1>" => {
           if i + 1 < rest.len() {
-            stdout = StdoutTarget::File(PathBuf::from(rest[i + 1].clone()));
+            stdout = StdoutTarget::Overwrite(PathBuf::from(rest[i + 1].clone()));
+            i += 2;
+            continue;
+          } else {
+            args.push(rest[i].clone());
+            i += 1;
+            continue;
+          }
+        }
+        "2>>" => {
+          if i + 1 < rest.len() {
+            stderr = StderrTarget::Append(PathBuf::from(rest[i + 1].clone()));
             i += 2;
             continue;
           } else {
@@ -40,7 +62,7 @@ impl ParsedInvocation {
         }
         "2>" => {
           if i + 1 < rest.len() {
-            stderr = StderrTarget::File(PathBuf::from(rest[i + 1].clone()));
+            stderr = StderrTarget::Overwrite(PathBuf::from(rest[i + 1].clone()));
             i += 2;
             continue;
           } else {

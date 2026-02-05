@@ -226,16 +226,24 @@ impl Command {
 
     match stdout {
       StdoutTarget::Stdout => {}
-      StdoutTarget::File(path) => {
+      StdoutTarget::Overwrite(path) => {
         let file = File::create(path)?;
+        command.stdout(Stdio::from(file));
+      }
+      StdoutTarget::Append(path) => {
+        let file = File::options().append(true).create(true).open(path)?;
         command.stdout(Stdio::from(file));
       }
     }
 
     match stderr {
       StderrTarget::Stderr => {}
-      StderrTarget::File(path) => {
+      StderrTarget::Overwrite(path) => {
         let file = File::create(path)?;
+        command.stderr(Stdio::from(file));
+      }
+      StderrTarget::Append(path) => {
+        let file = File::options().append(true).create(true).open(path)?;
         command.stderr(Stdio::from(file));
       }
     }
