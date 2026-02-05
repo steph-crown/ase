@@ -30,15 +30,104 @@ pub enum StdoutTarget {
   File(PathBuf),
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum StderrTarget {
+  Stderr,
+  File(PathBuf),
+}
+
 #[derive(Debug, PartialEq, EnumIs, EnumTryAs, Display)]
 pub enum Cmd {
-  Cd { cmd: Command },
-  Echo { cmd: Command, stdout: StdoutTarget },
+  Cd {
+    cmd: Command,
+    stderr: StderrTarget,
+  },
+  Echo {
+    cmd: Command,
+    stdout: StdoutTarget,
+    stderr: StderrTarget,
+  },
   Exit(u8),
-  Type { cmd: Command, stdout: StdoutTarget },
-  Exec { cmd: Command, stdout: StdoutTarget },
-  Pwd { stdout: StdoutTarget },
-  Unknown { cmd: Command },
+  Type {
+    cmd: Command,
+    stdout: StdoutTarget,
+    stderr: StderrTarget,
+  },
+  Exec {
+    cmd: Command,
+    stdout: StdoutTarget,
+    stderr: StderrTarget,
+  },
+  Pwd {
+    stdout: StdoutTarget,
+    stderr: StderrTarget,
+  },
+  Unknown {
+    cmd: Command,
+    stderr: StderrTarget,
+  },
+}
+
+struct ParsedInvocation {
+  cmd_name: String,
+  args: Vec<String>,
+  stdout: StdoutTarget,
+  stderr: StderrTarget,
+}
+
+impl ParsedInvocation {
+  fn from_tokens(tokens: Vec<String>) -> Option<Self> {
+    let mut iter = tokens.into_iter();
+    let cmd_name = iter.next()?;
+    let rest: Vec<String> = iter.collect();
+
+    let mut stdout = StdoutTarget::Stdout;
+    let mut stderr = StderrTarget::Stderr;
+    let mut args = Vec::new();
+    let mut i = 0;
+
+    while i < rest.len() {
+      match rest[i].as_str() {
+        ">" | "1>" => {
+          if i + 1 < rest.len() {
+            stdout = StdoutTarget::File(PathBuf::from(rest[i + 1].clone()));
+            i += 2;
+            continue;
+          } else {
+            args.push(rest[i].clone());
+            i += 1;
+            continue;
+          }
+        }
+        "2>" => {
+          if i + 1 < rest.len() {
+            stderr = StderrTarget::File(PathBuf::from(rest[i + 1].clone()));
+            i += 2;
+            continue;
+          } else {
+            args.push(rest[i].clone());
+            i += 1;
+            continue;
+          }
+        }
+        _ => {
+          args.push(rest[i].clone());
+          i += 1;
+        }
+      }
+    }
+
+    if args.is_empty() && rest.is_empty() {
+      return None;
+    }
+
+    Some(ParsedInvocation {
+      cmd_name,
+      args,
+      stdout,
+      stderr,
+    })
+  }
 }
 
 /// True when input has unclosed quote(s); caller should show continuation prompt and read more.
@@ -54,45 +143,30 @@ impl Cmd {
       return Ok(None);
     }
     let tokens = shlex::split(raw).unwrap_or_default();
-    let mut iter = tokens.into_iter();
-    let cmd_name = match iter.next() {
-      Some(name) => name,
-      None => return Ok(None),
-    };
-    let rest: Vec<String> = iter.collect();
-
-    let mut stdout = StdoutTarget::Stdout;
-    let mut args = Vec::new();
-    let mut i = 0;
-
-    while i < rest.len() {
-      if rest[i] == ">" {
-        if i + 1 < rest.len() {
-          stdout = StdoutTarget::File(PathBuf::from(rest[i + 1].clone()));
-          if i + 2 < rest.len() {
-            args.extend(rest[i + 2..].iter().cloned());
-          }
-          break;
-        } else {
-          args.push(rest[i].clone());
-        }
-      } else {
-        args.push(rest[i].clone());
-      }
-      i += 1;
-    }
-
-    if args.is_empty() && rest.is_empty() {
+    if tokens.is_empty() {
       return Ok(None);
     }
-
-    Ok(Some(Self::from_parts(&cmd_name, args, stdout)))
+    let Some(inv) = ParsedInvocation::from_tokens(tokens) else {
+      return Ok(None);
+    };
+    Ok(Some(Self::from_parts(
+      &inv.cmd_name,
+      inv.args,
+      inv.stdout,
+      inv.stderr,
+    )))
   }
 
-  pub fn from_parts(cmd_name: &str, args: Vec<String>, stdout: StdoutTarget) -> Self {
+  pub fn from_parts(
+    cmd_name: &str,
+    args: Vec<String>,
+    stdout: StdoutTarget,
+    stderr: StderrTarget,
+  ) -> Self {
     match cmd_name {
       "cd" => Cmd::Cd {
         cmd: Command::new(cmd_name, None, args),
+        stderr,
       },
       "exit" => {
         let code = args.first().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
@@ -101,17 +175,20 @@ impl Cmd {
       "echo" => Cmd::Echo {
         cmd: Command::new(cmd_name, None, args),
         stdout,
+        stderr,
       },
       "type" => Cmd::Type {
         cmd: Command::new(cmd_name, None, args),
         stdout,
+        stderr,
       },
-      "pwd" => Cmd::Pwd { stdout },
+      "pwd" => Cmd::Pwd { stdout, stderr },
       _ => {
         if cmd_name.contains('/') {
           Cmd::Exec {
             cmd: Command::new(cmd_name, Some(cmd_name.to_string()), args),
             stdout,
+            stderr,
           }
         } else if let Some(path_buf) = find_executable(cmd_name) {
           let path_str = path_buf
@@ -121,10 +198,12 @@ impl Cmd {
           Cmd::Exec {
             cmd: Command::new(cmd_name, Some(path_str), args),
             stdout,
+            stderr,
           }
         } else {
           Cmd::Unknown {
             cmd: Command::new(cmd_name, None, args),
+            stderr,
           }
         }
       }
@@ -133,36 +212,53 @@ impl Cmd {
 
   pub fn run(&self, shell_name: &str) -> anyhow::Result<RunResult> {
     match self {
-      Cmd::Echo { cmd, stdout } => {
+      Cmd::Echo {
+        cmd,
+        stdout,
+        stderr: _,
+      } => {
         let mut out = open_writer(stdout)?;
         echo_args(&cmd.args, &mut out)?;
         Ok(RunResult::Continue)
       }
       Cmd::Exit(code) => Ok(RunResult::Exit(*code)),
-      Cmd::Type { cmd, stdout } => {
+      Cmd::Type {
+        cmd,
+        stdout,
+        stderr: _,
+      } => {
         let mut out = open_writer(stdout)?;
         writeln!(out, "{}", resolve_types(&cmd.args))?;
         Ok(RunResult::Continue)
       }
-      Cmd::Exec { cmd, stdout } => {
-        if let Err(err) = cmd.run_with_stdout(stdout) {
-          eprintln!("{shell_name}: {err}");
+      Cmd::Exec {
+        cmd,
+        stdout,
+        stderr,
+      } => {
+        if let Err(err) = cmd.run_with_stdio(stdout, stderr) {
+          let mut err_out = open_stderr_writer(stderr)?;
+          writeln!(err_out, "{shell_name}: {err}")?;
         }
         Ok(RunResult::Continue)
       }
-      Cmd::Cd { cmd } => {
+      Cmd::Cd { cmd, stderr } => {
         let target = cmd.args.first().map(String::as_str).unwrap_or("");
-        change_dir(target)?;
+        if let Err(err) = change_dir(target) {
+          let mut err_out = open_stderr_writer(stderr)?;
+          writeln!(err_out, "{shell_name}: {err}")?;
+        }
         Ok(RunResult::Continue)
       }
-      Cmd::Pwd { stdout } => {
+      Cmd::Pwd { stdout, stderr: _ } => {
         let mut out = open_writer(stdout)?;
         let dir = env::current_dir().context("get current directory")?;
         writeln!(out, "{}", dir.display())?;
         Ok(RunResult::Continue)
       }
-      Cmd::Unknown { cmd } => {
-        eprintln!("{shell_name}: command not found: {}", cmd.name);
+      Cmd::Unknown { cmd, stderr } => {
+        let mut err_out = open_stderr_writer(stderr)?;
+        writeln!(err_out, "{shell_name}: command not found: {}", cmd.name)?;
         Ok(RunResult::Continue)
       }
     }
@@ -197,23 +293,34 @@ impl Command {
     Ok(())
   }
 
-  pub fn run_with_stdout(&self, target: &StdoutTarget) -> anyhow::Result<()> {
-    match target {
-      StdoutTarget::Stdout => self.run(),
+  pub fn run_with_stdio(&self, stdout: &StdoutTarget, stderr: &StderrTarget) -> anyhow::Result<()> {
+    let program = self.path.as_deref().unwrap_or(&self.name);
+    let mut command = std::process::Command::new(program);
+    command.args(&self.args);
+
+    match stdout {
+      StdoutTarget::Stdout => {}
       StdoutTarget::File(path) => {
-        let program = self.path.as_deref().unwrap_or(&self.name);
         let file = File::create(path)?;
-        let mut child = std::process::Command::new(program)
-          .args(&self.args)
-          .stdout(Stdio::from(file))
-          .spawn()
-          .with_context(|| format!("failed to spawn `{program}`"))?;
-        child
-          .wait()
-          .with_context(|| format!("failed to wait for `{program}`"))?;
-        Ok(())
+        command.stdout(Stdio::from(file));
       }
     }
+
+    match stderr {
+      StderrTarget::Stderr => {}
+      StderrTarget::File(path) => {
+        let file = File::create(path)?;
+        command.stderr(Stdio::from(file));
+      }
+    }
+
+    let mut child = command
+      .spawn()
+      .with_context(|| format!("failed to spawn `{program}`"))?;
+    child
+      .wait()
+      .with_context(|| format!("failed to wait for `{program}`"))?;
+    Ok(())
   }
 }
 
@@ -274,6 +381,13 @@ fn open_writer(target: &StdoutTarget) -> anyhow::Result<Box<dyn Write>> {
   }
 }
 
+fn open_stderr_writer(target: &StderrTarget) -> anyhow::Result<Box<dyn Write>> {
+  match target {
+    StderrTarget::Stderr => Ok(Box::new(io::stderr())),
+    StderrTarget::File(path) => Ok(Box::new(File::create(path)?)),
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -313,25 +427,35 @@ mod tests {
 
   #[test]
   fn from_parts_exit_no_args_is_zero() {
-    let cmd = Cmd::from_parts("exit", vec![], StdoutTarget::Stdout);
+    let cmd = Cmd::from_parts("exit", vec![], StdoutTarget::Stdout, StderrTarget::Stderr);
     assert!(matches!(cmd, Cmd::Exit(0)));
   }
 
   #[test]
   fn from_parts_exit_with_code() {
-    let cmd = Cmd::from_parts("exit", vec!["42".into()], StdoutTarget::Stdout);
+    let cmd = Cmd::from_parts(
+      "exit",
+      vec!["42".into()],
+      StdoutTarget::Stdout,
+      StderrTarget::Stderr,
+    );
     assert!(matches!(cmd, Cmd::Exit(42)));
   }
 
   #[test]
   fn from_parts_pwd() {
-    let cmd = Cmd::from_parts("pwd", vec![], StdoutTarget::Stdout);
+    let cmd = Cmd::from_parts("pwd", vec![], StdoutTarget::Stdout, StderrTarget::Stderr);
     assert!(matches!(cmd, Cmd::Pwd { .. }));
   }
 
   #[test]
   fn from_parts_type_args() {
-    let cmd = Cmd::from_parts("type", vec!["cd".into(), "ls".into()], StdoutTarget::Stdout);
+    let cmd = Cmd::from_parts(
+      "type",
+      vec!["cd".into(), "ls".into()],
+      StdoutTarget::Stdout,
+      StderrTarget::Stderr,
+    );
     let Cmd::Type { cmd, .. } = cmd else {
       unreachable!()
     };
@@ -340,8 +464,15 @@ mod tests {
 
   #[test]
   fn from_parts_cd_args() {
-    let cmd = Cmd::from_parts("cd", vec!["/tmp".into()], StdoutTarget::Stdout);
-    let Cmd::Cd { cmd } = cmd else { unreachable!() };
+    let cmd = Cmd::from_parts(
+      "cd",
+      vec!["/tmp".into()],
+      StdoutTarget::Stdout,
+      StderrTarget::Stderr,
+    );
+    let Cmd::Cd { cmd, .. } = cmd else {
+      unreachable!()
+    };
     assert_eq!(cmd.args, vec!["/tmp"]);
   }
 
