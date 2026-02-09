@@ -78,10 +78,6 @@ impl ParsedInvocation {
       }
     }
 
-    if args.is_empty() && rest.is_empty() && cmd_name.is_empty() {
-      return None;
-    }
-
     Some(ParsedInvocation {
       cmd_name,
       args,
