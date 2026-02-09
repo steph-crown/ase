@@ -2,11 +2,14 @@
 
 use std::{
   env,
-  fs::File,
+  fs::{self, File},
   io::Write,
   path::{Path, PathBuf},
   process::Stdio,
 };
+
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 
 use anyhow::Context;
 use pathsearch::find_executable_in_path;
@@ -277,6 +280,48 @@ pub fn resolve_types(args: &[String]) -> String {
 
 pub fn find_executable(cmd: &str) -> Option<PathBuf> {
   find_executable_in_path(cmd)
+}
+
+/// Returns sorted, deduplicated command names (builtins + PATH executables) that start with `prefix`.
+/// Used for tab completion; only the first word of the line should be completed.
+pub fn complete_command(prefix: &str) -> Vec<String> {
+  let mut names: Vec<String> = BUILTIN_NAMES
+    .iter()
+    .filter(|n| n.starts_with(prefix))
+    .map(|s| (*s).to_string())
+    .collect();
+
+  let path_var = env::var("PATH").unwrap_or_default();
+  for dir in env::split_paths(&path_var) {
+    let Ok(entries) = fs::read_dir(&dir) else {
+      continue;
+    };
+    for entry in entries.flatten() {
+      let path = entry.path();
+      let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+        continue;
+      };
+      if !name.starts_with(prefix) {
+        continue;
+      }
+      let meta = match entry.metadata() {
+        Ok(m) => m,
+        Err(_) => continue,
+      };
+      if meta.is_dir() {
+        continue;
+      }
+      #[cfg(unix)]
+      if meta.permissions().mode() & 0o111 == 0 {
+        continue;
+      }
+      names.push(name.to_string());
+    }
+  }
+
+  names.sort_unstable();
+  names.dedup();
+  names
 }
 
 pub fn change_dir(target: &str) -> anyhow::Result<()> {
