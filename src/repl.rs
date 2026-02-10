@@ -39,14 +39,11 @@ impl Completer for AseHelper {
     pos: usize,
     ctx: &RlContext<'_>,
   ) -> rustyline::Result<(usize, Vec<Pair>)> {
-    // Find the current word and its start.
     let (start, word) = extract_word(line, pos, None, |c| c == ' ' || c == '\t');
-    // Text before this word tells us which argument position we're in.
     let before = &line[..start];
     let mut parts = before.split_whitespace();
     let first = parts.next();
 
-    // If there is no token before this word, we're completing the command name.
     if first.is_none() {
       let candidates = complete_command(word)
         .into_iter()
@@ -58,15 +55,12 @@ impl Completer for AseHelper {
       return Ok((start, candidates));
     }
 
-    // Otherwise we're in an argument position. If the command is `cd`, delegate
-    // to the built-in filename completer for path completion.
     let cmd_name = first.unwrap();
     if cmd_name == "cd" {
       let file_completer = FilenameCompleter::new();
       return file_completer.complete(line, pos, ctx);
     }
 
-    // For other commands we currently don't complete arguments.
     Ok((pos, Vec::new()))
   }
 }

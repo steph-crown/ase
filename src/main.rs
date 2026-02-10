@@ -41,7 +41,6 @@ fn run() -> anyhow::Result<u8> {
 
     if !buffer.trim().is_empty() {
       history.push(buffer.clone());
-      // Also feed rustyline's own in-memory history for up/down arrows.
       let _ = editor.add_history_entry(&buffer);
     }
 

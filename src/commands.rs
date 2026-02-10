@@ -32,19 +32,6 @@ const BUILTIN_NAMES: &[&str] = &["cd", "echo", "exit", "type", "pwd", "history"]
 fn is_builtin(name: &str) -> bool {
   BUILTIN_NAMES.contains(&name)
 }
-
-/// Parse and run a full command line, including optional pipelines and the
-/// `history` builtin.
-///
-/// - Empty or whitespace-only input returns `RunResult::Continue`.
-/// - `history` (with optional count) is implemented as a builtin and uses the
-///   provided `history` slice.
-/// - Lines without a `|` and not `history` are parsed into a single `Cmd` and
-///   run as before.
-/// - Lines containing `|` are treated as a pipeline of external commands:
-///   - Each stage is resolved via `PATH` (or an explicit path if it contains `/`).
-///   - All stages except the last stream into the next via OS pipes.
-///   - The last stage obeys stdout/stderr redirections (`>`, `>>`, `2>`, `2>>`).
 pub fn run_line(raw: &str, shell_name: &str, history: &[String]) -> anyhow::Result<RunResult> {
   let raw = raw.trim();
   if raw.is_empty() {
@@ -265,7 +252,7 @@ fn split_pipeline(tokens: Vec<String>) -> Option<Vec<Vec<String>>> {
   for tok in tokens {
     if tok == "|" {
       if current.is_empty() {
-        return None; // `|` with no command before it
+        return None;
       }
       segments.push(std::mem::take(&mut current));
     } else {
@@ -274,7 +261,7 @@ fn split_pipeline(tokens: Vec<String>) -> Option<Vec<Vec<String>>> {
   }
 
   if current.is_empty() {
-    return None; // trailing `|`
+    return None;
   }
 
   segments.push(current);
@@ -292,9 +279,6 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
     }
   };
 
-  // Parse each segment as a simple invocation. Redirections on non-final
-  // segments are ignored for now; only the last stage's stdout/stderr
-  // redirections are honored.
   let mut invocations = Vec::new();
   for seg in segments {
     let Some(inv) = ParsedInvocation::from_tokens(seg) else {
@@ -308,18 +292,12 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
     return Ok(RunResult::Continue);
   }
 
-  // For pipelines we always run external programs, even for names that are
-  // builtins in the interactive shell (e.g. `echo`), so that standard tools
-  // like `/bin/echo` are usable in pipelines. `cd` and other purely-shell
-  // builtins don't make semantic sense in pipelines anyway.
-
   let mut children = Vec::new();
   let mut prev_stdout: Option<ChildStdout> = None;
 
   for (idx, inv) in invocations.iter().enumerate() {
     let is_last = idx == invocations.len() - 1;
 
-    // Resolve program path.
     let program_path = if inv.cmd_name.contains('/') {
       PathBuf::from(&inv.cmd_name)
     } else if let Some(p) = find_executable(&inv.cmd_name) {
@@ -332,13 +310,10 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
     let mut cmd = OsCommand::new(&program_path);
     cmd.args(&inv.args);
 
-    // stdin: from previous stage if any.
     if let Some(stdin) = prev_stdout.take() {
       cmd.stdin(Stdio::from(stdin));
     }
 
-    // stdout: intermediate stages pipe into the next; last stage honors
-    // redirection targets.
     if is_last {
       match &inv.stdout {
         StdoutTarget::Stdout => { /* inherit */ }
@@ -355,8 +330,6 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
       cmd.stdout(Stdio::piped());
     }
 
-    // stderr: intermediate stages inherit shell stderr; last stage honors
-    // redirection.
     if is_last {
       match &inv.stderr {
         StderrTarget::Stderr => { /* inherit */ }
@@ -386,7 +359,6 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
     children.push(child);
   }
 
-  // Wait for all stages to complete.
   for mut child in children {
     child
       .wait()
@@ -395,10 +367,6 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
 
   Ok(RunResult::Continue)
 }
-
-// run_history_builtin has been replaced by the `Cmd::History` variant and
-// handled inside `Cmd::run` so that `history` follows the same pattern as
-// other builtins.
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Command {
