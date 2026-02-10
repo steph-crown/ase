@@ -1,6 +1,6 @@
 use ase::{
   SHELL_NAME,
-  commands::{Cmd, RunResult, complete_command, needs_more_input},
+  commands::{RunResult, needs_more_input, run_line},
   repl::create_editor,
   utils::get_prompt,
 };
@@ -38,13 +38,10 @@ fn run() -> anyhow::Result<u8> {
       continue;
     }
 
-    let Some(cmd) = Cmd::from_input(&buffer)? else {
-      buffer.clear();
-      continue;
-    };
+    let result = run_line(&buffer, SHELL_NAME)?;
     buffer.clear();
 
-    match cmd.run(SHELL_NAME)? {
+    match result {
       RunResult::Continue => {}
       RunResult::Exit(code) => {
         println!("Ó dà bọ̀! \n{SHELL_NAME} has finished");

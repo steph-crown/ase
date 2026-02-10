@@ -5,7 +5,7 @@ use std::{
   fs::{self, File},
   io::Write,
   path::{Path, PathBuf},
-  process::Stdio,
+  process::{ChildStdout, Command as OsCommand, Stdio},
 };
 
 #[cfg(unix)]
@@ -31,6 +31,36 @@ const BUILTIN_NAMES: &[&str] = &["cd", "echo", "exit", "type", "pwd"];
 
 fn is_builtin(name: &str) -> bool {
   BUILTIN_NAMES.contains(&name)
+}
+
+/// Parse and run a full command line, including optional pipelines.
+///
+/// - Empty or whitespace-only input returns `RunResult::Continue`.
+/// - Lines without a `|` are parsed into a single `Cmd` and run as before.
+/// - Lines containing `|` are treated as a pipeline of external commands:
+///   - Each stage is resolved via `PATH` (or an explicit path if it contains `/`).
+///   - All stages except the last stream into the next via OS pipes.
+///   - The last stage obeys stdout/stderr redirections (`>`, `>>`, `2>`, `2>>`).
+pub fn run_line(raw: &str, shell_name: &str) -> anyhow::Result<RunResult> {
+  let raw = raw.trim();
+  if raw.is_empty() {
+    return Ok(RunResult::Continue);
+  }
+
+  let tokens = match shlex::split(raw) {
+    Some(t) if !t.is_empty() => t,
+    _ => return Ok(RunResult::Continue),
+  };
+
+  if !tokens.iter().any(|t| t == "|") {
+    // No pipeline: fall back to existing single-command path.
+    let Some(cmd) = Cmd::from_input(raw)? else {
+      return Ok(RunResult::Continue);
+    };
+    return cmd.run(shell_name);
+  }
+
+  run_pipeline(tokens, shell_name)
 }
 
 #[derive(Debug, PartialEq, EnumIs, EnumTryAs, Display)]
@@ -192,6 +222,144 @@ impl Cmd {
       }
     }
   }
+}
+
+fn split_pipeline(tokens: Vec<String>) -> Option<Vec<Vec<String>>> {
+  let mut segments = Vec::new();
+  let mut current = Vec::new();
+
+  for tok in tokens {
+    if tok == "|" {
+      if current.is_empty() {
+        return None; // `|` with no command before it
+      }
+      segments.push(std::mem::take(&mut current));
+    } else {
+      current.push(tok);
+    }
+  }
+
+  if current.is_empty() {
+    return None; // trailing `|`
+  }
+
+  segments.push(current);
+  Some(segments)
+}
+
+fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResult> {
+  use anyhow::anyhow;
+
+  let segments = match split_pipeline(tokens) {
+    Some(segs) => segs,
+    None => {
+      eprintln!("{shell_name}: invalid pipeline");
+      return Ok(RunResult::Continue);
+    }
+  };
+
+  // Parse each segment as a simple invocation. Redirections on non-final
+  // segments are ignored for now; only the last stage's stdout/stderr
+  // redirections are honored.
+  let mut invocations = Vec::new();
+  for seg in segments {
+    let Some(inv) = ParsedInvocation::from_tokens(seg) else {
+      eprintln!("{shell_name}: invalid command in pipeline");
+      return Ok(RunResult::Continue);
+    };
+    invocations.push(inv);
+  }
+
+  if invocations.is_empty() {
+    return Ok(RunResult::Continue);
+  }
+
+  // For pipelines we always run external programs, even for names that are
+  // builtins in the interactive shell (e.g. `echo`), so that standard tools
+  // like `/bin/echo` are usable in pipelines. `cd` and other purely-shell
+  // builtins don't make semantic sense in pipelines anyway.
+
+  let mut children = Vec::new();
+  let mut prev_stdout: Option<ChildStdout> = None;
+
+  for (idx, inv) in invocations.iter().enumerate() {
+    let is_last = idx == invocations.len() - 1;
+
+    // Resolve program path.
+    let program_path = if inv.cmd_name.contains('/') {
+      PathBuf::from(&inv.cmd_name)
+    } else if let Some(p) = find_executable(&inv.cmd_name) {
+      p
+    } else {
+      eprintln!("{shell_name}: command not found: {}", inv.cmd_name);
+      return Ok(RunResult::Continue);
+    };
+
+    let mut cmd = OsCommand::new(&program_path);
+    cmd.args(&inv.args);
+
+    // stdin: from previous stage if any.
+    if let Some(stdin) = prev_stdout.take() {
+      cmd.stdin(Stdio::from(stdin));
+    }
+
+    // stdout: intermediate stages pipe into the next; last stage honors
+    // redirection targets.
+    if is_last {
+      match &inv.stdout {
+        StdoutTarget::Stdout => { /* inherit */ }
+        StdoutTarget::Overwrite(path) => {
+          let file = File::create(path)?;
+          cmd.stdout(Stdio::from(file));
+        }
+        StdoutTarget::Append(path) => {
+          let file = File::options().append(true).create(true).open(path)?;
+          cmd.stdout(Stdio::from(file));
+        }
+      }
+    } else {
+      cmd.stdout(Stdio::piped());
+    }
+
+    // stderr: intermediate stages inherit shell stderr; last stage honors
+    // redirection.
+    if is_last {
+      match &inv.stderr {
+        StderrTarget::Stderr => { /* inherit */ }
+        StderrTarget::Overwrite(path) => {
+          let file = File::create(path)?;
+          cmd.stderr(Stdio::from(file));
+        }
+        StderrTarget::Append(path) => {
+          let file = File::options().append(true).create(true).open(path)?;
+          cmd.stderr(Stdio::from(file));
+        }
+      }
+    }
+
+    let mut child = cmd
+      .spawn()
+      .with_context(|| format!("failed to spawn `{}`", inv.cmd_name))?;
+
+    if !is_last {
+      let child_stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| anyhow!("failed to capture stdout for pipeline stage"))?;
+      prev_stdout = Some(child_stdout);
+    }
+
+    children.push(child);
+  }
+
+  // Wait for all stages to complete.
+  for mut child in children {
+    child
+      .wait()
+      .with_context(|| "failed to wait for pipeline stage")?;
+  }
+
+  Ok(RunResult::Continue)
 }
 
 #[derive(Debug, PartialEq, Clone)]
