@@ -27,21 +27,25 @@ pub enum RunResult {
   Exit(u8),
 }
 
-const BUILTIN_NAMES: &[&str] = &["cd", "echo", "exit", "type", "pwd"];
+const BUILTIN_NAMES: &[&str] = &["cd", "echo", "exit", "type", "pwd", "history"];
 
 fn is_builtin(name: &str) -> bool {
   BUILTIN_NAMES.contains(&name)
 }
 
-/// Parse and run a full command line, including optional pipelines.
+/// Parse and run a full command line, including optional pipelines and the
+/// `history` builtin.
 ///
 /// - Empty or whitespace-only input returns `RunResult::Continue`.
-/// - Lines without a `|` are parsed into a single `Cmd` and run as before.
+/// - `history` (with optional count) is implemented as a builtin and uses the
+///   provided `history` slice.
+/// - Lines without a `|` and not `history` are parsed into a single `Cmd` and
+///   run as before.
 /// - Lines containing `|` are treated as a pipeline of external commands:
 ///   - Each stage is resolved via `PATH` (or an explicit path if it contains `/`).
 ///   - All stages except the last stream into the next via OS pipes.
 ///   - The last stage obeys stdout/stderr redirections (`>`, `>>`, `2>`, `2>>`).
-pub fn run_line(raw: &str, shell_name: &str) -> anyhow::Result<RunResult> {
+pub fn run_line(raw: &str, shell_name: &str, history: &[String]) -> anyhow::Result<RunResult> {
   let raw = raw.trim();
   if raw.is_empty() {
     return Ok(RunResult::Continue);
@@ -57,7 +61,7 @@ pub fn run_line(raw: &str, shell_name: &str) -> anyhow::Result<RunResult> {
     let Some(cmd) = Cmd::from_input(raw)? else {
       return Ok(RunResult::Continue);
     };
-    return cmd.run(shell_name);
+    return cmd.run(shell_name, history);
   }
 
   run_pipeline(tokens, shell_name)
@@ -86,6 +90,11 @@ pub enum Cmd {
     stderr: StderrTarget,
   },
   Pwd {
+    stdout: StdoutTarget,
+    stderr: StderrTarget,
+  },
+  History {
+    cmd: Command,
     stdout: StdoutTarget,
     stderr: StderrTarget,
   },
@@ -136,6 +145,11 @@ impl Cmd {
         stdout,
         stderr,
       },
+      "history" => Cmd::History {
+        cmd: Command::new(cmd_name, None, args),
+        stdout,
+        stderr,
+      },
       "type" => Cmd::Type {
         cmd: Command::new(cmd_name, None, args),
         stdout,
@@ -169,7 +183,7 @@ impl Cmd {
     }
   }
 
-  pub fn run(&self, shell_name: &str) -> anyhow::Result<RunResult> {
+  pub fn run(&self, shell_name: &str, history: &[String]) -> anyhow::Result<RunResult> {
     match self {
       Cmd::Echo {
         cmd,
@@ -213,6 +227,26 @@ impl Cmd {
         let mut out = open_writer(stdout)?;
         let dir = env::current_dir().context("get current directory")?;
         writeln!(out, "{}", dir.display())?;
+        Ok(RunResult::Continue)
+      }
+      Cmd::History {
+        cmd,
+        stdout,
+        stderr: _,
+      } => {
+        // Optional numeric argument: `history` or `history N`.
+        let count = cmd.args.get(0).and_then(|s| s.parse::<usize>().ok());
+        let total = history.len();
+        let start = match count {
+          Some(n) if n < total => total - n,
+          Some(_) => 0,
+          None => 0,
+        };
+
+        let mut out = open_writer(stdout)?;
+        for (idx, entry) in history.iter().enumerate().skip(start) {
+          writeln!(out, "  {:>4}  {entry}", idx + 1)?;
+        }
         Ok(RunResult::Continue)
       }
       Cmd::Unknown { cmd, stderr } => {
@@ -361,6 +395,10 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
 
   Ok(RunResult::Continue)
 }
+
+// run_history_builtin has been replaced by the `Cmd::History` variant and
+// handled inside `Cmd::run` so that `history` follows the same pattern as
+// other builtins.
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Command {

@@ -24,6 +24,7 @@ fn run() -> anyhow::Result<u8> {
   let mut editor = create_editor()?;
 
   let mut buffer = String::new();
+  let mut history: Vec<String> = Vec::new();
 
   loop {
     let prompt = if buffer.is_empty() {
@@ -38,7 +39,13 @@ fn run() -> anyhow::Result<u8> {
       continue;
     }
 
-    let result = run_line(&buffer, SHELL_NAME)?;
+    if !buffer.trim().is_empty() {
+      history.push(buffer.clone());
+      // Also feed rustyline's own in-memory history for up/down arrows.
+      let _ = editor.add_history_entry(&buffer);
+    }
+
+    let result = run_line(&buffer, SHELL_NAME, &history)?;
     buffer.clear();
 
     match result {
