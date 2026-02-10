@@ -5,7 +5,7 @@ use ase::{
 };
 
 use anyhow::Context;
-use rustyline::completion::{Completer, Pair, extract_word};
+use rustyline::completion::{Completer, FilenameCompleter, Pair, extract_word};
 use rustyline::config::{BellStyle, CompletionType, Configurer};
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
@@ -31,21 +31,37 @@ impl Completer for AseHelper {
     &self,
     line: &str,
     pos: usize,
-    _ctx: &RlContext<'_>,
+    ctx: &RlContext<'_>,
   ) -> rustyline::Result<(usize, Vec<Pair>)> {
-    // Only complete the first word (no space before cursor).
+    // Find the current word and its start.
     let (start, word) = extract_word(line, pos, None, |c| c == ' ' || c == '\t');
-    if start > 0 {
-      return Ok((pos, vec![]));
+    // Text before this word tells us which argument position we're in.
+    let before = &line[..start];
+    let mut parts = before.split_whitespace();
+    let first = parts.next();
+
+    // If there is no token before this word, we're completing the command name.
+    if first.is_none() {
+      let candidates = complete_command(word)
+        .into_iter()
+        .map(|s| Pair {
+          display: s.clone(),
+          replacement: s,
+        })
+        .collect();
+      return Ok((start, candidates));
     }
-    let candidates = complete_command(word)
-      .into_iter()
-      .map(|s| Pair {
-        display: s.clone(),
-        replacement: s,
-      })
-      .collect();
-    Ok((start, candidates))
+
+    // Otherwise we're in an argument position. If the command is `cd`, delegate
+    // to the built-in filename completer for path completion.
+    let cmd_name = first.unwrap();
+    if cmd_name == "cd" {
+      let file_completer = FilenameCompleter::new();
+      return file_completer.complete(line, pos, ctx);
+    }
+
+    // For other commands we currently don't complete arguments.
+    Ok((pos, Vec::new()))
   }
 }
 
