@@ -678,6 +678,9 @@ pub fn echo_args<W: Write>(args: &[String], out: &mut W) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use std::fs;
+  use std::io::Read;
+  use std::path::PathBuf;
 
   #[test]
   fn from_input_empty_returns_none() {
@@ -774,5 +777,152 @@ mod tests {
   fn is_builtin_unknown() {
     assert!(!is_builtin("ls"));
     assert!(!is_builtin(""));
+  }
+
+  #[test]
+  fn split_by_semicolon_respects_quotes() {
+    let input = r#"echo "a;b"; echo c; echo 'd;e'"#;
+    let parts = split_by_semicolon(input);
+    assert_eq!(parts.len(), 3);
+    assert_eq!(parts[0], r#"echo "a;b""#);
+    assert_eq!(parts[1], "echo c");
+    assert_eq!(parts[2], r#"echo 'd;e'"#);
+  }
+
+  #[test]
+  fn split_by_and_or_respects_quotes() {
+    let input = r#"echo "a && b" && echo c || echo 'd || e'"#;
+    let (parts, ops) = split_by_and_or(input);
+    assert_eq!(
+      parts,
+      vec![r#"echo "a && b""#, "echo c", r#"echo 'd || e'"#]
+    );
+    assert_eq!(ops, vec![ControlOp::AndAnd, ControlOp::OrOr]);
+  }
+
+  #[test]
+  fn run_one_part_uses_builtin_status() {
+    let (result, status) = run_one_part("echo ok", "ase-test", &[]).unwrap();
+    assert!(matches!(result, RunResult::Continue));
+    assert_eq!(status, 0);
+
+    let (result, status) = run_one_part("definitely-does-not-exist-xyz", "ase-test", &[]).unwrap();
+    assert!(matches!(result, RunResult::Continue));
+    assert_eq!(status, 127);
+  }
+
+  #[test]
+  fn run_one_part_pipeline_command_not_found_gives_127() {
+    let (result, status) =
+      run_one_part("no-such-cmd-abc | also-no-such-cmd-def", "ase-test", &[]).unwrap();
+    assert!(matches!(result, RunResult::Continue));
+    assert_eq!(status, 127);
+  }
+
+  fn tmp_path(name: &str) -> PathBuf {
+    let mut p = std::env::temp_dir();
+    p.push(format!("ase_test_{name}_{}", std::process::id()));
+    p
+  }
+
+  #[test]
+  fn control_and_and_runs_second_only_on_success() {
+    let path = tmp_path("and_and");
+    let line = format!(
+      "echo first > {} && echo second >> {}",
+      path.display(),
+      path.display()
+    );
+
+    let result = run_line(&line, "ase-test", &[]).unwrap();
+    assert!(matches!(result, RunResult::Continue));
+
+    let mut contents = String::new();
+    let mut file = fs::File::open(&path).unwrap();
+    file.read_to_string(&mut contents).unwrap();
+    fs::remove_file(&path).ok();
+
+    assert!(contents.contains("first"));
+    assert!(contents.contains("second"));
+  }
+
+  #[test]
+  fn control_and_and_skips_on_failure() {
+    let path = tmp_path("and_and_skip");
+    let line = format!(
+      "no-such-cmd-xyz && echo should-not-run > {}",
+      path.display()
+    );
+
+    let result = run_line(&line, "ase-test", &[]).unwrap();
+    assert!(matches!(result, RunResult::Continue));
+    assert!(!path.exists());
+  }
+
+  #[test]
+  fn control_or_or_runs_on_failure() {
+    let path = tmp_path("or_or");
+    let line = format!(
+      "no-such-cmd-xyz || echo ran-after-failure > {}",
+      path.display()
+    );
+
+    let result = run_line(&line, "ase-test", &[]).unwrap();
+    assert!(matches!(result, RunResult::Continue));
+
+    let contents = fs::read_to_string(&path).unwrap();
+    fs::remove_file(&path).ok();
+    assert!(contents.contains("ran-after-failure"));
+  }
+
+  #[test]
+  fn control_or_or_skips_on_success() {
+    let path = tmp_path("or_or_skip");
+    let line = format!("echo ok || echo should-not-run > {}", path.display());
+
+    let result = run_line(&line, "ase-test", &[]).unwrap();
+    assert!(matches!(result, RunResult::Continue));
+    assert!(!path.exists());
+  }
+
+  #[test]
+  fn semicolon_always_runs_both() {
+    let path = tmp_path("semicolon");
+    let line = format!(
+      "echo one > {}; echo two >> {}",
+      path.display(),
+      path.display()
+    );
+
+    let result = run_line(&line, "ase-test", &[]).unwrap();
+    assert!(matches!(result, RunResult::Continue));
+
+    let contents = fs::read_to_string(&path).unwrap();
+    fs::remove_file(&path).ok();
+    assert!(contents.contains("one"));
+    assert!(contents.contains("two"));
+  }
+
+  #[test]
+  fn history_builtin_respects_count_and_writes_to_file() {
+    let path = tmp_path("history");
+    let history = vec!["ls".to_string(), "echo a".to_string(), "echo b".to_string()];
+    let line = format!("history 2 > {}", path.display());
+
+    let result = run_line(&line, "ase-test", &history).unwrap();
+    assert!(matches!(result, RunResult::Continue));
+
+    let contents = fs::read_to_string(&path).unwrap();
+    fs::remove_file(&path).ok();
+
+    assert!(contents.contains("echo a"));
+    assert!(contents.contains("echo b"));
+    assert!(!contents.contains("ls"));
+  }
+
+  #[test]
+  fn complete_command_includes_builtins_and_path_executables() {
+    let names = complete_command("ec");
+    assert!(names.contains(&"echo".to_string()));
   }
 }

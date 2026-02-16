@@ -94,6 +94,95 @@ impl ParsedInvocation {
   }
 }
 
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::fs;
+
+  #[test]
+  fn expands_env_vars_and_tilde_in_args() {
+    unsafe {
+      std::env::set_var("FOO", "bar");
+      std::env::set_var("HOME", "/home/testuser");
+    }
+
+    let tokens = vec![
+      "echo".to_string(),
+      "$FOO".to_string(),
+      "x$FOO".to_string(),
+      "~".to_string(),
+      "~/dir".to_string(),
+    ];
+
+    let inv = ParsedInvocation::from_tokens(tokens).unwrap();
+    assert_eq!(
+      inv.args,
+      vec![
+        "bar".to_string(),
+        "xbar".to_string(),
+        "/home/testuser".to_string(),
+        "/home/testuser/dir".to_string()
+      ]
+    );
+  }
+
+  #[test]
+  fn expands_globs_in_args() {
+    let dir = std::env::temp_dir().join(format!("ase_glob_test_{}", std::process::id()));
+    fs::create_dir_all(&dir).unwrap();
+
+    let a = dir.join("a.txt");
+    let b = dir.join("b.txt");
+    let c = dir.join("c.log");
+    fs::write(&a, "a").unwrap();
+    fs::write(&b, "b").unwrap();
+    fs::write(&c, "c").unwrap();
+
+    let old_cwd = std::env::current_dir().unwrap();
+    std::env::set_current_dir(&dir).unwrap();
+
+    let tokens = vec!["echo".to_string(), "*.txt".to_string()];
+    let inv = ParsedInvocation::from_tokens(tokens).unwrap();
+
+    let mut args = inv.args.clone();
+    args.sort();
+    assert_eq!(args, vec!["a.txt".to_string(), "b.txt".to_string()]);
+
+    std::env::set_current_dir(old_cwd).unwrap();
+    fs::remove_file(&a).ok();
+    fs::remove_file(&b).ok();
+    fs::remove_file(&c).ok();
+    fs::remove_dir_all(&dir).ok();
+  }
+
+  #[test]
+  fn expands_tilde_and_vars_in_redirection_paths() {
+    let home = std::env::var("HOME").unwrap_or_default();
+
+    let tokens = vec![
+      "echo".to_string(),
+      "hi".to_string(),
+      ">".to_string(),
+      "~/out.txt".to_string(),
+      "2>".to_string(),
+      "/tmp/dummy.log".to_string(),
+    ];
+
+    let inv = ParsedInvocation::from_tokens(tokens).unwrap();
+
+    match inv.stdout {
+      StdoutTarget::Overwrite(p) => {
+        let expected = PathBuf::from(&home).join("out.txt");
+        assert_eq!(p, expected);
+      }
+      _ => panic!("unexpected stdout target"),
+    }
+
+    // stderr target is covered by other tests; here we just care that we don't
+    // panic and that tilde expansion happened correctly for stdout.
+  }
+}
+
 fn expand_arg(token: &str) -> Vec<String> {
   let token = expand_vars_and_tilde(token);
 

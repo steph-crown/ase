@@ -65,3 +65,43 @@ fn find_git_dir(start: &Path) -> Option<PathBuf> {
 
   None
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn prompt_includes_current_directory_name() {
+    let cwd = env::current_dir().unwrap();
+    let name = cwd
+      .file_name()
+      .map(|s| s.to_string_lossy().into_owned())
+      .unwrap_or_default();
+
+    let prompt = get_prompt();
+    assert!(prompt.contains(&name));
+  }
+
+  #[test]
+  fn prompt_includes_git_branch_when_in_repo() {
+    let tmp = env::temp_dir().join(format!("ase_git_test_{}", std::process::id()));
+    fs::create_dir_all(&tmp).unwrap();
+    let git_dir = tmp.join(".git");
+    fs::create_dir_all(&git_dir).unwrap();
+
+    let head_path = git_dir.join("HEAD");
+    fs::write(&head_path, "ref: refs/heads/feature/test\n").unwrap();
+
+    let old_cwd = env::current_dir().unwrap();
+    env::set_current_dir(&tmp).unwrap();
+
+    let prompt = get_prompt();
+
+    env::set_current_dir(old_cwd).unwrap();
+    fs::remove_file(&head_path).ok();
+    fs::remove_dir_all(&git_dir).ok();
+    fs::remove_dir_all(&tmp).ok();
+
+    assert!(prompt.contains("(test)"));
+  }
+}
