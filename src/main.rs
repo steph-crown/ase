@@ -1,4 +1,4 @@
-use ase::{
+use ase_shell::{
   SHELL_NAME,
   commands::{RunResult, needs_more_input, run_line},
   repl::create_editor,

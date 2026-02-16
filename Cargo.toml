@@ -1,5 +1,5 @@
 [package]
-name = "ase"
+name = "ase-shell"
 version = "0.1.0"
 edition = "2024"
 authors = ["Stephen Emmanuel <emmanuelstephen024@gmail.com>"]
@@ -9,6 +9,10 @@ readme = "readme.md"
 keywords = ["shell", "cli", "unix", "repl"]
 categories = ["command-line-utilities", "development-tools"]
 homepage = "https://github.com/steph-crown/ase"
+
+[[bin]]
+name = "ase"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0"
