@@ -1,5 +1,4 @@
-àṣẹ (ase-shell)
-================
+# àṣẹ (ase-shell)
 
 àṣẹ (pronounced roughly “ah‑sheh”) is a small Unix-style interactive shell written in Rust.
 
@@ -36,6 +35,12 @@ It’s designed to feel familiar if you live in `bash`/`zsh`, but with a compact
   - `cmd1 | cmd2 | cmd3` using OS pipes between external programs.
   - Last stage honours stdout/stderr redirections.
 
+- **Control operators**
+  - `;` – run commands in sequence, regardless of the previous command’s exit status.
+  - `&&` – run the next command only if the previous one succeeded (exit status 0).
+  - `||` – run the next command only if the previous one failed (exit status ≠ 0).
+  - Splitting respects quotes (e.g. `echo "hello; world"` is one command).
+
 - **History**
   - Up/down arrows navigate previous commands.
   - `history` and `history N` print numbered history.
@@ -50,7 +55,7 @@ It’s designed to feel familiar if you live in `bash`/`zsh`, but with a compact
   - `~` / `~/...` – tilde expansion using `$HOME`.
   - Globbing: `*`, `?`, `[...]` in arguments expand to matching paths.
 
-This is intentionally *not* a full POSIX shell; it’s a small, usable shell you can read in an afternoon.
+This is intentionally _not_ a full POSIX shell; it’s a small, usable shell you can read in an afternoon.
 
 ---
 
@@ -110,6 +115,19 @@ cat Cargo.toml | sed -n '1,5p'
 echo hello > out.txt
 echo more >> out.txt
 ls not-a-dir 2> errors.log
+```
+
+### Control operator examples
+
+```bash
+echo one ; echo two
+# Prints "one" then "two", always runs both.
+
+mkdir foo && cd foo
+# Creates foo, then changes into it only if mkdir succeeded.
+
+false || echo "previous command failed"
+# Runs echo only because false exits with non-zero.
 ```
 
 ---
@@ -214,7 +232,6 @@ sudo cp target/release/ase /usr/local/bin/ase
 
 This is **not** a drop-in replacement for `bash`/`zsh`. Notable gaps:
 
-- No `&&` / `||` / `;` control operators.
 - No job control (`&`, `jobs`, `fg`, `bg`, `Ctrl+Z`).
 - No shell scripting language (no `if`, `for`, `while`, functions, `$@`, etc.).
 - No here-docs (`<<`), here-strings, or advanced redirections (`2>&1`, arbitrary FDs).

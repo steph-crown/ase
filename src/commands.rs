@@ -32,26 +32,153 @@ const BUILTIN_NAMES: &[&str] = &["cd", "echo", "exit", "type", "pwd", "history"]
 fn is_builtin(name: &str) -> bool {
   BUILTIN_NAMES.contains(&name)
 }
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum ControlOp {
+  AndAnd,
+  OrOr,
+}
+
+/// Split a line by `;`, respecting quotes. Returns segments (trimmed).
+fn split_by_semicolon(s: &str) -> Vec<String> {
+  let mut result = Vec::new();
+  let mut start = 0;
+  let mut in_double = false;
+  let mut in_single = false;
+  let bytes = s.as_bytes();
+  let mut i = 0;
+  while i < bytes.len() {
+    let c = bytes[i] as char;
+    match c {
+      '"' if !in_single => in_double = !in_double,
+      '\'' if !in_double => in_single = !in_single,
+      ';' if !in_double && !in_single => {
+        result.push(s[start..i].trim().to_string());
+        start = i + 1;
+      }
+      _ => {}
+    }
+    i += 1;
+  }
+  result.push(s[start..].trim().to_string());
+  result
+}
+
+/// Split a segment by `&&` and `||`, respecting quotes. Returns (segments, operators).
+/// Does not split on single `|` (pipeline).
+fn split_by_and_or(s: &str) -> (Vec<String>, Vec<ControlOp>) {
+  let mut segments = Vec::new();
+  let mut ops = Vec::new();
+  let mut start = 0;
+  let mut in_double = false;
+  let mut in_single = false;
+  let bytes = s.as_bytes();
+  let mut i = 0;
+  while i < bytes.len() {
+    let c = bytes[i] as char;
+    match c {
+      '"' if !in_single => in_double = !in_double,
+      '\'' if !in_double => in_single = !in_single,
+      '&' if !in_double && !in_single && i + 1 < bytes.len() && bytes[i + 1] == b'&' => {
+        segments.push(s[start..i].trim().to_string());
+        ops.push(ControlOp::AndAnd);
+        i += 1;
+        start = i + 1;
+      }
+      '|' if !in_double && !in_single && i + 1 < bytes.len() && bytes[i + 1] == b'|' => {
+        segments.push(s[start..i].trim().to_string());
+        ops.push(ControlOp::OrOr);
+        i += 1;
+        start = i + 1;
+      }
+      _ => {}
+    }
+    i += 1;
+  }
+  segments.push(s[start..].trim().to_string());
+  (segments, ops)
+}
+
+/// Run a single part (may contain pipelines) and return (RunResult, exit_status).
+fn run_one_part(
+  raw: &str,
+  shell_name: &str,
+  history: &[String],
+) -> anyhow::Result<(RunResult, u8)> {
+  let raw = raw.trim();
+  if raw.is_empty() {
+    return Ok((RunResult::Continue, 0));
+  }
+
+  let tokens = match shlex::split(raw) {
+    Some(t) if !t.is_empty() => t,
+    _ => return Ok((RunResult::Continue, 0)),
+  };
+
+  if tokens.iter().any(|t| t == "|") {
+    let status = run_pipeline_for_status(tokens, shell_name)?;
+    return Ok((RunResult::Continue, status));
+  }
+
+  let Some(cmd) = Cmd::from_input(raw)? else {
+    return Ok((RunResult::Continue, 0));
+  };
+  cmd.run_with_status(shell_name, history)
+}
+
 pub fn run_line(raw: &str, shell_name: &str, history: &[String]) -> anyhow::Result<RunResult> {
   let raw = raw.trim();
   if raw.is_empty() {
     return Ok(RunResult::Continue);
   }
 
-  let tokens = match shlex::split(raw) {
-    Some(t) if !t.is_empty() => t,
-    _ => return Ok(RunResult::Continue),
-  };
+  // Split by `;` first (lowest precedence)
+  let semicolon_segments = split_by_semicolon(raw);
 
-  if !tokens.iter().any(|t| t == "|") {
-    // No pipeline: fall back to existing single-command path.
-    let Some(cmd) = Cmd::from_input(raw)? else {
-      return Ok(RunResult::Continue);
-    };
-    return cmd.run(shell_name, history);
+  let mut last_status = 0u8;
+  for segment in semicolon_segments {
+    let seg = segment.trim();
+    if seg.is_empty() {
+      continue;
+    }
+    // Split by `&&` and `||` within this segment
+    let (parts, ops) = split_by_and_or(seg);
+    if parts.is_empty() || parts.iter().all(|p| p.is_empty()) {
+      continue;
+    }
+
+    for (idx, part) in parts.iter().enumerate() {
+      let part = part.trim();
+      if part.is_empty() {
+        continue;
+      }
+      // Operator *before* this part (between previous and this)
+      let op = if idx == 0 { None } else { ops.get(idx - 1) };
+      let should_run = match op {
+        None => true, // first part
+        Some(ControlOp::AndAnd) => last_status == 0,
+        Some(ControlOp::OrOr) => last_status != 0,
+      };
+      if !should_run {
+        if op == Some(&ControlOp::AndAnd) {
+          continue; // keep last_status
+        }
+        if op == Some(&ControlOp::OrOr) {
+          break; // OrOr: we skipped because last_status was 0
+        }
+        continue;
+      }
+
+      let (result, status) = run_one_part(part, shell_name, history)?;
+      last_status = status;
+
+      if let RunResult::Exit(code) = result {
+        return Ok(RunResult::Exit(code));
+      }
+    }
   }
 
-  run_pipeline(tokens, shell_name)
+  Ok(RunResult::Continue)
 }
 
 #[derive(Debug, PartialEq, EnumIs, EnumTryAs, Display)]
@@ -170,7 +297,12 @@ impl Cmd {
     }
   }
 
-  pub fn run(&self, shell_name: &str, history: &[String]) -> anyhow::Result<RunResult> {
+  /// Run the command and return (RunResult, exit_status). Exit status is used for `&&` / `||`.
+  pub fn run_with_status(
+    &self,
+    shell_name: &str,
+    history: &[String],
+  ) -> anyhow::Result<(RunResult, u8)> {
     match self {
       Cmd::Echo {
         cmd,
@@ -179,9 +311,9 @@ impl Cmd {
       } => {
         let mut out = open_writer(stdout)?;
         echo_args(&cmd.args, &mut out)?;
-        Ok(RunResult::Continue)
+        Ok((RunResult::Continue, 0))
       }
-      Cmd::Exit(code) => Ok(RunResult::Exit(*code)),
+      Cmd::Exit(code) => Ok((RunResult::Exit(*code), *code)),
       Cmd::Type {
         cmd,
         stdout,
@@ -189,39 +321,46 @@ impl Cmd {
       } => {
         let mut out = open_writer(stdout)?;
         writeln!(out, "{}", resolve_types(&cmd.args))?;
-        Ok(RunResult::Continue)
+        Ok((RunResult::Continue, 0))
       }
       Cmd::Exec {
         cmd,
         stdout,
         stderr,
       } => {
-        if let Err(err) = cmd.run_with_stdio(stdout, stderr) {
-          let mut err_out = open_stderr_writer(stderr)?;
-          writeln!(err_out, "{shell_name}: {err}")?;
-        }
-        Ok(RunResult::Continue)
+        let status = match cmd.run_with_stdio(stdout, stderr) {
+          Ok(s) => s,
+          Err(err) => {
+            let mut err_out = open_stderr_writer(stderr)?;
+            writeln!(err_out, "{shell_name}: {err}")?;
+            127
+          }
+        };
+        Ok((RunResult::Continue, status))
       }
       Cmd::Cd { cmd, stderr } => {
         let target = cmd.args.first().map(String::as_str).unwrap_or("");
-        if let Err(err) = change_dir(target) {
-          let mut err_out = open_stderr_writer(stderr)?;
-          writeln!(err_out, "{shell_name}: {err}")?;
-        }
-        Ok(RunResult::Continue)
+        let status = match change_dir(target) {
+          Ok(()) => 0,
+          Err(err) => {
+            let mut err_out = open_stderr_writer(stderr)?;
+            writeln!(err_out, "{shell_name}: {err}")?;
+            1
+          }
+        };
+        Ok((RunResult::Continue, status))
       }
       Cmd::Pwd { stdout, stderr: _ } => {
         let mut out = open_writer(stdout)?;
         let dir = env::current_dir().context("get current directory")?;
         writeln!(out, "{}", dir.display())?;
-        Ok(RunResult::Continue)
+        Ok((RunResult::Continue, 0))
       }
       Cmd::History {
         cmd,
         stdout,
         stderr: _,
       } => {
-        // Optional numeric argument: `history` or `history N`.
         let count = cmd.args.get(0).and_then(|s| s.parse::<usize>().ok());
         let total = history.len();
         let start = match count {
@@ -234,14 +373,18 @@ impl Cmd {
         for (idx, entry) in history.iter().enumerate().skip(start) {
           writeln!(out, "  {:>4}  {entry}", idx + 1)?;
         }
-        Ok(RunResult::Continue)
+        Ok((RunResult::Continue, 0))
       }
       Cmd::Unknown { cmd, stderr } => {
         let mut err_out = open_stderr_writer(stderr)?;
         writeln!(err_out, "{shell_name}: command not found: {}", cmd.name)?;
-        Ok(RunResult::Continue)
+        Ok((RunResult::Continue, 127))
       }
     }
+  }
+
+  pub fn run(&self, shell_name: &str, history: &[String]) -> anyhow::Result<RunResult> {
+    self.run_with_status(shell_name, history).map(|(r, _)| r)
   }
 }
 
@@ -268,14 +411,14 @@ fn split_pipeline(tokens: Vec<String>) -> Option<Vec<Vec<String>>> {
   Some(segments)
 }
 
-fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResult> {
+fn run_pipeline_for_status(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<u8> {
   use anyhow::anyhow;
 
   let segments = match split_pipeline(tokens) {
     Some(segs) => segs,
     None => {
       eprintln!("{shell_name}: invalid pipeline");
-      return Ok(RunResult::Continue);
+      return Ok(127);
     }
   };
 
@@ -283,13 +426,13 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
   for seg in segments {
     let Some(inv) = ParsedInvocation::from_tokens(seg) else {
       eprintln!("{shell_name}: invalid command in pipeline");
-      return Ok(RunResult::Continue);
+      return Ok(127);
     };
     invocations.push(inv);
   }
 
   if invocations.is_empty() {
-    return Ok(RunResult::Continue);
+    return Ok(127);
   }
 
   let mut children = Vec::new();
@@ -304,7 +447,7 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
       p
     } else {
       eprintln!("{shell_name}: command not found: {}", inv.cmd_name);
-      return Ok(RunResult::Continue);
+      return Ok(127);
     };
 
     let mut cmd = OsCommand::new(&program_path);
@@ -316,7 +459,7 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
 
     if is_last {
       match &inv.stdout {
-        StdoutTarget::Stdout => { /* inherit */ }
+        StdoutTarget::Stdout => {}
         StdoutTarget::Overwrite(path) => {
           let file = File::create(path)?;
           cmd.stdout(Stdio::from(file));
@@ -332,7 +475,7 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
 
     if is_last {
       match &inv.stderr {
-        StderrTarget::Stderr => { /* inherit */ }
+        StderrTarget::Stderr => {}
         StderrTarget::Overwrite(path) => {
           let file = File::create(path)?;
           cmd.stderr(Stdio::from(file));
@@ -359,13 +502,17 @@ fn run_pipeline(tokens: Vec<String>, shell_name: &str) -> anyhow::Result<RunResu
     children.push(child);
   }
 
-  for mut child in children {
-    child
+  let mut last_status = 127u8;
+  for (i, mut child) in children.into_iter().enumerate() {
+    let exit_status = child
       .wait()
       .with_context(|| "failed to wait for pipeline stage")?;
+    if i == invocations.len() - 1 {
+      last_status = (exit_status.code().unwrap_or(1) & 0xFF) as u8;
+    }
   }
 
-  Ok(RunResult::Continue)
+  Ok(last_status)
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -396,7 +543,7 @@ impl Command {
     Ok(())
   }
 
-  pub fn run_with_stdio(&self, stdout: &StdoutTarget, stderr: &StderrTarget) -> anyhow::Result<()> {
+  pub fn run_with_stdio(&self, stdout: &StdoutTarget, stderr: &StderrTarget) -> anyhow::Result<u8> {
     let program = self.path.as_deref().unwrap_or(&self.name);
     let mut command = std::process::Command::new(program);
     command.args(&self.args);
@@ -428,10 +575,11 @@ impl Command {
     let mut child = command
       .spawn()
       .with_context(|| format!("failed to spawn `{program}`"))?;
-    child
+    let status = child
       .wait()
       .with_context(|| format!("failed to wait for `{program}`"))?;
-    Ok(())
+    let code = status.code().unwrap_or(1);
+    Ok((code & 0xFF) as u8)
   }
 }
 
