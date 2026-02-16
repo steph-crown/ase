@@ -54,6 +54,66 @@ This is intentionally *not* a full POSIX shell; it’s a small, usable shell you
 
 ---
 
+## Using àṣẹ
+
+### Prompt
+
+The prompt looks like:
+
+```text
+àṣẹ [my-project (main)] >
+```
+
+- `my-project` is the current directory name.
+- `(main)` is the current Git branch when inside a repo (omitted otherwise).
+
+### Builtins in a bit more detail
+
+- **`cd [DIR]`**
+  - `cd` or `cd ~` → `$HOME`.
+  - `cd /tmp`, `cd relative/path` as you’d expect.
+
+- **`pwd`**
+  - Prints the current working directory.
+
+- **`echo ARG...`**
+  - Writes arguments joined by a space, followed by a newline.
+
+- **`exit [CODE]`**
+  - `exit` exits with status `0`.
+  - `exit 1` exits with status `1`, etc.
+
+- **`type NAME...`**
+  - For each `NAME`, prints either:
+    - `NAME is a shell builtin`, or
+    - `NAME is /full/path/to/executable`, or
+    - `NAME: not found`.
+
+- **`history [N]`**
+  - `history` prints all commands in the in-memory history.
+  - `history 20` prints only the last 20.
+  - Output can be redirected:
+    ```bash
+    history > hist.txt
+    history 50 >> last50.txt
+    ```
+
+### Pipelines and redirection examples
+
+```bash
+ls | wc -l
+ps aux | grep ase | wc -l
+cat Cargo.toml | sed -n '1,5p'
+```
+
+```bash
+echo hello > out.txt
+echo more >> out.txt
+ls not-a-dir 2> errors.log
+```
+
+---
+
 ## Installation
 
 ### macOS
@@ -146,66 +206,6 @@ You can copy or symlink it somewhere on your `PATH`, for example:
 
 ```bash
 sudo cp target/release/ase /usr/local/bin/ase
-```
-
----
-
-## Using àṣẹ
-
-### Prompt
-
-The prompt looks like:
-
-```text
-àṣẹ [my-project (main)] >
-```
-
-- `my-project` is the current directory name.
-- `(main)` is the current Git branch when inside a repo (omitted otherwise).
-
-### Builtins in a bit more detail
-
-- **`cd [DIR]`**
-  - `cd` or `cd ~` → `$HOME`.
-  - `cd /tmp`, `cd relative/path` as you’d expect.
-
-- **`pwd`**
-  - Prints the current working directory.
-
-- **`echo ARG...`**
-  - Writes arguments joined by a space, followed by a newline.
-
-- **`exit [CODE]`**
-  - `exit` exits with status `0`.
-  - `exit 1` exits with status `1`, etc.
-
-- **`type NAME...`**
-  - For each `NAME`, prints either:
-    - `NAME is a shell builtin`, or
-    - `NAME is /full/path/to/executable`, or
-    - `NAME: not found`.
-
-- **`history [N]`**
-  - `history` prints all commands in the in-memory history.
-  - `history 20` prints only the last 20.
-  - Output can be redirected:
-    ```bash
-    history > hist.txt
-    history 50 >> last50.txt
-    ```
-
-### Pipelines and redirection examples
-
-```bash
-ls | wc -l
-ps aux | grep ase | wc -l
-cat Cargo.toml | sed -n '1,5p'
-```
-
-```bash
-echo hello > out.txt
-echo more >> out.txt
-ls not-a-dir 2> errors.log
 ```
 
 ---
