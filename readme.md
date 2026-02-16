@@ -56,9 +56,52 @@ This is intentionally *not* a full POSIX shell; it’s a small, usable shell you
 
 ## Installation
 
-### With Cargo
+### macOS
 
-You’ll need a recent Rust toolchain (`rustup` recommended).
+**Homebrew** (recommended):
+
+```bash
+brew install steph-crown/tap/ase-shell
+```
+
+**Shell installer (macOS or Linux):**
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://github.com/steph-crown/ase/releases/download/v0.1.3/ase-shell-installer.sh | sh
+```
+
+This downloads the appropriate binary for your platform and puts `ase` on your `PATH`.
+
+### Linux
+
+**Shell installer (most distros):**
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://github.com/steph-crown/ase/releases/download/v0.1.3/ase-shell-installer.sh | sh
+```
+
+Alternatively, grab the tarball for your architecture from the
+[releases page](https://github.com/steph-crown/ase/releases), unpack it,
+and move the `ase` binary somewhere on your `PATH` (e.g. `/usr/local/bin`).
+
+### Windows
+
+**PowerShell installer:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/steph-crown/ase/releases/download/v0.1.3/ase-shell-installer.ps1 | iex"
+```
+
+You can also download the `.zip` or `.msi` for your architecture from the
+[releases page](https://github.com/steph-crown/ase/releases) and install it manually.
+
+### OS‑agnostic options
+
+#### Cargo
+
+You’ll need a recent Rust toolchain (`rustup` recommended):
 
 ```bash
 cargo install ase-shell
@@ -73,6 +116,15 @@ export PATH="$HOME/.cargo/bin:$PATH"
 Then run:
 
 ```bash
+ase
+```
+
+#### npm
+
+For a global CLI (if you prefer managing it via npm):
+
+```bash
+npm install -g ase-shell
 ase
 ```
 
@@ -168,7 +220,7 @@ This is **not** a drop-in replacement for `bash`/`zsh`. Notable gaps:
 - No here-docs (`<<`), here-strings, or advanced redirections (`2>&1`, arbitrary FDs).
 - No history expansion (`!!`, `!123`, `!foo`).
 
-If you treat àṣẹ as a **simple interactive shell** rather than a full scripting environment, you’ll be in the right mental model.
+I plan to add some of these in future releases, so watch out for them.
 
 ---
 
