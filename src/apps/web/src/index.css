@@ -162,6 +162,6 @@
     @apply font-air;
   }
   .wrapper {
-    @apply max-w-350 mx-auto px-4 sm:px-6 lg:px-12;
+    @apply max-w-350 mx-auto px-5 sm:px-6 lg:px-12;
   }
 }

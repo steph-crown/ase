@@ -30,17 +30,19 @@ export function HeroSection() {
 
   return (
     <div className=" min-h-screen bg-background">
-      <div className="wrapper py-14">
+      <div className="wrapper py-5 sm:py-14">
         <div className="grid lg:grid-cols-2 gap-24 items-center">
-          {/* Left Column */}
-          <div className="">
+          {/* Left Column - min-w-0 so grid allows shrink; overflow-hidden so card can't overflow */}
+          <div className="min-w-0 overflow-hidden">
             <div className="">
-              <h1 className="text-5xl lg:text-6xl text-foreground leading-16 font-air font-medium tracking-[-2%] mb-5">
+              <h1 className="text-[40px] sm:text-5xl lg:text-[54px] xl:text-6xl text-foreground leading-[106%] font-air font-medium tracking-[-2%] mb-5">
                 Command Your Programs to Work
               </h1>
 
-              <p className="text-base text-[#999999] font-semibold leading-relaxed max-w-[548px] font-air ">
-                <span className="text-primary font-agba text-xl">àṣẹ</span>{" "}
+              <p className="text-sm sm:text-base text-[#999999] font-semibold leading-relaxed max-w-[548px] font-air ">
+                <span className="text-primary font-agba text-base sm:text-xl">
+                  àṣẹ
+                </span>{" "}
                 <span className="">("ah-sheh")</span> is a small Unix-style
                 shell written in Rust. It gives you a familiar command-line
                 experience with builtins, pipelines, history, tab completion,
@@ -50,14 +52,14 @@ export function HeroSection() {
             </div>
 
             <div className="flex gap-4 mt-10 mb-33">
-              <Button className="bg-primary text-white hover:bg-primary/90 py-3 px-5 h-11">
+              <Button className="bg-primary text-white hover:bg-primary/90 py-3 px-5 h-11 text-sm font-medium">
                 Get Started
               </Button>
 
               <Button
                 size="lg"
                 variant="outline"
-                className="border-[#31271E] h-11 py-3 px-5"
+                className="border-[#31271E] h-11 py-3 px-5 text-sm font-medium"
               >
                 View on GitHub
               </Button>
@@ -65,36 +67,54 @@ export function HeroSection() {
 
             {/* Installation Card */}
             <Card
-              className="bg-[#1B1B1D] border-0 shadow-none rounded-[0.5rem] overflow-hidden max-w-[548px] ring-0 py-0"
+              className="bg-[#1B1B1D] border-0 shadow-none rounded-[0.5rem] overflow-hidden w-full max-w-[548px] ring-0 py-0"
               style={{
                 boxShadow: "0 2px 4px 2px rgba(0, 0, 0, 0.1)",
               }}
             >
-              <CardContent className="p-0">
+              <CardContent className="p-0 min-w-0">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="w-full justify-start border-b border-[#0A0A0B] bg-transparent  p-0 px-5 h-auto gap-4">
-                    {Object.keys(installationCommands).map((key) => (
-                      <TabsTrigger
-                        key={key}
-                        value={key}
-                        className={cn(
-                          "px-2 py-3.5 text-sm leading-[20px] font-air font-medium cursor-pointer ",
-                          activeTab === key ? "text-[#ccc]" : "text-[#777778]",
-                        )}
-                      >
-                        {key === "mac"
-                          ? "Mac"
-                          : key.charAt(0).toUpperCase() + key.slice(1)}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
+                  <div
+                    className={cn(
+                      "border-b border-[#0A0A0B] min-w-0 overflow-x-auto overflow-y-hidden",
+                      "md:overflow-visible",
+                      "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+                    )}
+                  >
+                    <TabsList className="w-max min-w-full justify-start border-b-0 border-transparent bg-transparent p-0 px-5 h-auto gap-4 flex-nowrap">
+                      {Object.keys(installationCommands).map((key) => (
+                        <TabsTrigger
+                          key={key}
+                          value={key}
+                          className={cn(
+                            "flex-shrink-0 px-2 py-3.5 text-sm leading-[20px] font-air font-medium cursor-pointer ",
+                            activeTab === key
+                              ? "text-[#ccc]"
+                              : "text-[#777778]",
+                          )}
+                        >
+                          {key === "mac"
+                            ? "Mac"
+                            : key.charAt(0).toUpperCase() + key.slice(1)}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </div>
 
                   {Object.entries(installationCommands).map(
                     ([key, command]) => (
-                      <TabsContent key={key} value={key} className="mt-0 p-6">
-                        <div className="flex items-center gap-3 font-mono text-sm">
-                          <span className="text-muted-foreground">$</span>
-                          <span className="text-primary flex-1">{command}</span>
+                      <TabsContent
+                        key={key}
+                        value={key}
+                        className="mt-0 p-6 min-w-0"
+                      >
+                        <div className="flex items-center gap-3 font-mono text-sm min-w-0">
+                          <span className="text-muted-foreground flex-shrink-0">
+                            $
+                          </span>
+                          <span className="text-primary flex-1 min-w-0 truncate">
+                            {command}
+                          </span>
 
                           <button
                             onClick={copyToClipboard}
