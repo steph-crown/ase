@@ -26,39 +26,42 @@ export function HeroSection() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+    <div className=" min-h-screen bg-background">
+      <div className="wrapper py-14">
+        <div className="grid lg:grid-cols-2 gap-24 items-center">
           {/* Left Column */}
-          <div className="space-y-8">
-            <div className="space-y-6">
-              <h1 className="text-5xl lg:text-6xl font-bold text-foreground leading-tight font-air font-semibold">
+          <div className="">
+            <div className="">
+              <h1 className="text-5xl lg:text-6xl text-foreground leading-16 font-air font-medium tracking-[-2%] mb-5">
                 Command Your Programs to Work
               </h1>
-              <p className="text-lg text-muted-foreground leading-relaxed max-w-xl font-air font-normal">
+
+              <p className="text-base text-[#999999] font-semibold leading-relaxed max-w-[548px] font-air ">
                 <span className="text-primary font-agba text-xl">àṣẹ</span>{" "}
-                <span className="text-muted-foreground">("ah-sheh")</span> is a
-                small Unix-style shell written in Rust. It gives you a familiar
-                command-line experience with builtins, pipelines, history, tab
-                completion, and basic expansions, so you can run any (most)
-                thing(s) you'd normally do in a shell.
+                <span className="">("ah-sheh")</span> is a small Unix-style
+                shell written in Rust. It gives you a familiar command-line
+                experience with builtins, pipelines, history, tab completion,
+                and basic expansions, so you can run any (most) thing(s) you'd
+                normally do in a shell.
               </p>
             </div>
 
-            <div className="flex gap-4">
-              <Button
-                size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
+            <div className="flex gap-4 mt-10 mb-33">
+              <Button className="bg-primary text-white hover:bg-primary/90 py-3 px-5 h-11">
                 Get Started
               </Button>
-              <Button size="lg" variant="outline" className="border-border">
+
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-[#31271E] h-11 py-3 px-5"
+              >
                 View on GitHub
               </Button>
             </div>
 
             {/* Installation Card */}
-            <Card className="bg-card border-border rounded-t-xl overflow-hidden">
+            <Card className="bg-[#1B1B1D] border-border rounded-[0.5rem] overflow-hidden max-w-[548px]">
               <CardContent className="p-0">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <TabsList className="w-full justify-start border-b border-border bg-transparent h-auto p-0">
@@ -74,6 +77,7 @@ export function HeroSection() {
                       </TabsTrigger>
                     ))}
                   </TabsList>
+
                   {Object.entries(installationCommands).map(
                     ([key, command]) => (
                       <TabsContent key={key} value={key} className="mt-0 p-6">
@@ -97,7 +101,7 @@ export function HeroSection() {
           </div>
 
           {/* Right Column - Animation */}
-          <div className="relative h-[600px] lg:h-[700px]">
+          <div className="relative h-[600px] lg:h-[700px] ">
             <TerminalAnimation />
           </div>
         </div>
