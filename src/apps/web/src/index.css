@@ -165,3 +165,61 @@
     @apply max-w-350 mx-auto px-5 sm:px-6 lg:px-12;
   }
 }
+
+/* Feature Card Patterned Background Animations */
+@keyframes wave-1 {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(-50px) translateY(-10px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes wave-2 {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(30px) translateY(15px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes wave-3 {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(-30px) translateY(-5px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes slide-stripes {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 40px 40px;
+  }
+}
+
+.animate-wave-1 {
+  animation: wave-1 8s ease-in-out infinite;
+}
+
+.animate-wave-2 {
+  animation: wave-2 10s ease-in-out infinite;
+}
+
+.animate-wave-3 {
+  animation: wave-3 12s ease-in-out infinite;
+}
