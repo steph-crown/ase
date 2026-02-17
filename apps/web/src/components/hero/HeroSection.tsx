@@ -10,7 +10,7 @@ const installationCommands = {
   linux:
     "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/steph-crown/ase/releases/download/v0.2.0/ase-shell-installer.sh | sh",
   windows:
-    "powershell -ExecutionPolicy Bypass -c \"irm https://github.com/steph-crown/ase/releases/download/v0.2.0/ase-shell-installer.ps1 | iex\"",
+    'powershell -ExecutionPolicy Bypass -c "irm https://github.com/steph-crown/ase/releases/download/v0.2.0/ase-shell-installer.ps1 | iex"',
   npm: "npm install -g ase-shell",
   cargo: "cargo install ase-shell",
 };
@@ -54,7 +54,7 @@ export function HeroSection() {
             <div className="flex gap-4 mt-10 mb-16 sm:mb-20 lg:mb-33">
               <a
                 href="#install"
-                className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-3 h-11 text-sm font-medium text-white hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+                className="flex-1 min-w-0 min-[450px]:flex-initial inline-flex items-center justify-center rounded-md bg-primary px-5 py-3 h-11 text-sm font-medium text-white hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
               >
                 Get Started
               </a>
@@ -62,7 +62,7 @@ export function HeroSection() {
                 href="https://github.com/steph-crown/ase"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-md border border-[#31271E] bg-transparent px-5 py-3 h-11 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+                className="flex-1 min-w-0 min-[450px]:flex-initial inline-flex items-center justify-center rounded-md border border-[#31271E] bg-transparent px-5 py-3 h-11 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
               >
                 View on GitHub
               </a>
