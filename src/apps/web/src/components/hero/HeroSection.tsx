@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TerminalAnimation } from "./TerminalAnimation";
 import { Copy } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const installationCommands = {
   mac: "brew install ase-shell",
@@ -61,15 +62,23 @@ export function HeroSection() {
             </div>
 
             {/* Installation Card */}
-            <Card className="bg-[#1B1B1D] border-border rounded-[0.5rem] overflow-hidden max-w-[548px]">
+            <Card
+              className="bg-[#1B1B1D] border-0 shadow-none rounded-[0.5rem] overflow-hidden max-w-[548px] ring-0 py-0"
+              style={{
+                boxShadow: "0 2px 4px 2px rgba(0, 0, 0, 0.1)",
+              }}
+            >
               <CardContent className="p-0">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="w-full justify-start border-b border-border bg-transparent h-auto p-0">
+                  <TabsList className="w-full justify-start border-b border-border bg-transparent  p-0 px-5 h-auto gap-4">
                     {Object.keys(installationCommands).map((key) => (
                       <TabsTrigger
                         key={key}
                         value={key}
-                        className="capitalize px-6 py-3"
+                        className={cn(
+                          "px-2 py-3.5 text-sm leading-[20px] font-air font-medium cursor-pointer ",
+                          activeTab === key ? "text-[#ccc]" : "text-[#777778]",
+                        )}
                       >
                         {key === "mac"
                           ? "Mac"
@@ -84,12 +93,24 @@ export function HeroSection() {
                         <div className="flex items-center gap-3 font-mono text-sm">
                           <span className="text-muted-foreground">$</span>
                           <span className="text-primary flex-1">{command}</span>
+
                           <button
                             onClick={copyToClipboard}
-                            className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1 h-10 w-10 border border-[#474747] rounded-[0.375rem] flex items-center justify-center cursor-pointer"
                             aria-label="Copy command"
                           >
-                            <Copy className="h-4 w-4" />
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 20 20"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M14.1666 3.33335H13.3333C13.3333 2.89133 13.1577 2.4674 12.8452 2.15484C12.5326 1.84228 12.1087 1.66669 11.6666 1.66669H8.33331C7.89129 1.66669 7.46736 1.84228 7.1548 2.15484C6.84224 2.4674 6.66665 2.89133 6.66665 3.33335H5.83331C5.17027 3.33335 4.53439 3.59675 4.06555 4.06559C3.59671 4.53443 3.33331 5.17031 3.33331 5.83335V15.8334C3.33331 16.4964 3.59671 17.1323 4.06555 17.6011C4.53439 18.07 5.17027 18.3334 5.83331 18.3334H14.1666C14.8297 18.3334 15.4656 18.07 15.9344 17.6011C16.4033 17.1323 16.6666 16.4964 16.6666 15.8334V5.83335C16.6666 5.17031 16.4033 4.53443 15.9344 4.06559C15.4656 3.59675 14.8297 3.33335 14.1666 3.33335ZM8.33331 3.33335H11.6666V4.16669V5.00002H8.33331V3.33335ZM15 15.8334C15 16.0544 14.9122 16.2663 14.7559 16.4226C14.5996 16.5789 14.3877 16.6667 14.1666 16.6667H5.83331C5.6123 16.6667 5.40034 16.5789 5.24406 16.4226C5.08778 16.2663 4.99998 16.0544 4.99998 15.8334V5.83335C4.99998 5.61234 5.08778 5.40038 5.24406 5.2441C5.40034 5.08782 5.6123 5.00002 5.83331 5.00002H6.66665C6.66665 5.44205 6.84224 5.86597 7.1548 6.17853C7.46736 6.49109 7.89129 6.66669 8.33331 6.66669H11.6666C12.1087 6.66669 12.5326 6.49109 12.8452 6.17853C13.1577 5.86597 13.3333 5.44205 13.3333 5.00002H14.1666C14.3877 5.00002 14.5996 5.08782 14.7559 5.2441C14.9122 5.40038 15 5.61234 15 5.83335V15.8334Z"
+                                fill="#999999"
+                              />
+                            </svg>
                           </button>
                         </div>
                       </TabsContent>
