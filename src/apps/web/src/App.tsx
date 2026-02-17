@@ -1,7 +1,7 @@
-import { Toaster } from "@/components/ui/sonner";
 import { Navigation } from "@/components/Navigation";
-import { HeroSection } from "@/components/hero/HeroSection";
 import { FeaturesSection } from "@/components/features/FeaturesSection";
+import { HeroSection } from "@/components/hero/HeroSection";
+import { Toaster } from "@/components/ui/sonner";
 
 export function App() {
   return (

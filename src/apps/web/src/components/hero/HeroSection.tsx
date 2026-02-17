@@ -29,7 +29,7 @@ export function HeroSection() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className=" bg-background">
       <div className="wrapper py-5 sm:py-14">
         <div className="grid lg:grid-cols-2 gap-24 items-center">
           {/* Left Column - constrained by wrapper on all screens */}

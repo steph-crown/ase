@@ -98,9 +98,9 @@ export function FeatureCard({
           </div>
         </div>
 
-        {/* Terminal - Centered */}
-        <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-5 lg:p-6">
-          <div className="w-full max-w-full h-full">
+        {/* Terminal - ~10px offset on mobile, ~40px on desktop */}
+        <div className="absolute inset-0 flex items-center justify-center p-2.5 lg:p-10">
+          <div className="w-full h-full">
             <FeatureTerminal commands={commands} />
           </div>
         </div>
