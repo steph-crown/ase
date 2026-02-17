@@ -7,7 +7,7 @@ export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   const navLinks = [
-    { href: "#download", label: "Download" },
+    { href: "#install", label: "Install" },
     { href: "#features", label: "Features" },
   ];
 

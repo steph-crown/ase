@@ -117,7 +117,7 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section className="py-16 sm:py-24 lg:py-32 bg-background">
+    <section id="features" className="py-16 sm:py-24 lg:py-32 bg-background">
       <div className="wrapper">
         <div className="text-center mb-10 sm:mb-12 lg:mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-medium text-foreground leading-[106%] font-air tracking-[-2%] mb-3 sm:mb-4 px-4 sm:px-0">
