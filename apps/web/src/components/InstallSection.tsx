@@ -15,6 +15,9 @@ export function InstallSection() {
         <div className="flex justify-center">
           <InstallCard className="w-full max-w-[748px] " />
         </div>
+        <p className="text-center mt-6 text-sm text-[#999999] font-air font-semibold">
+          Then run <code className="font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded">ase</code> in your terminal to start the shell.
+        </p>
       </div>
     </section>
   );
