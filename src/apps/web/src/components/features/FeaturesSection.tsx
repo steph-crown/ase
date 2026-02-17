@@ -1,5 +1,4 @@
 import { FeatureCard } from "./FeatureCard";
-import { cn } from "@/lib/utils";
 
 const features = [
   {
@@ -120,7 +119,6 @@ export function FeaturesSection() {
   return (
     <section className="py-16 sm:py-24 lg:py-32 bg-background">
       <div className="wrapper">
-        {/* Section Header */}
         <div className="text-center mb-10 sm:mb-12 lg:mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-medium text-foreground leading-[106%] font-air tracking-[-2%] mb-3 sm:mb-4 px-4 sm:px-0">
             <span className="text-primary">Everything</span> You Need
@@ -131,29 +129,21 @@ export function FeaturesSection() {
           </p>
         </div>
 
-        {/* Features Grid with Border Lines */}
-        <div className="relative border border-[#323234] overflow-hidden">
-          {/* Grid Container */}
+        <div className="relative border border-[#3b3440] overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2 relative">
-            {/* Vertical Grid Lines */}
-            {/* Start vertical line */}
-            <div className="hidden md:block absolute left-0 top-0 bottom-0 w-px bg-[#323234] z-10" />
-            {/* Middle vertical line */}
-            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-[#323234] -translate-x-px z-10" />
-            {/* End vertical line */}
-            <div className="hidden md:block absolute right-0 top-0 bottom-0 w-px bg-[#323234] z-10" />
+            <div className="hidden md:block absolute left-0 top-0 bottom-0 w-px bg-[#3b3440] z-10" />
+            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-[#3b3440] -translate-x-px z-10" />
+            <div className="hidden md:block absolute right-0 top-0 bottom-0 w-px bg-[#3b3440] z-10" />
 
-            {/* Horizontal Grid Lines */}
-            {/* Top horizontal line */}
-            <div className="absolute top-0 left-0 right-0 h-px bg-[#323234] z-10" />
-            {/* Middle horizontal line (between row 1 and 2) */}
-            <div className="absolute top-1/2 left-0 right-0 h-px bg-[#323234] -translate-y-px hidden md:block z-10" />
-            {/* Bottom horizontal line */}
-            <div className="absolute bottom-0 left-0 right-0 h-px bg-[#323234] z-10" />
+            <div className="absolute top-0 left-0 right-0 h-px bg-[#3b3440] z-10" />
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-[#3b3440] -translate-y-px hidden md:block z-10" />
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-[#3b3440] z-10" />
 
-            {/* Feature Cards */}
             {features.map((feature, idx) => (
-              <div key={idx} className="relative">
+              <div
+                key={idx}
+                className="relative border-b border-[#3b3440] md:border-b-0"
+              >
                 <div className="p-6 sm:p-8 lg:p-10">
                   <FeatureCard
                     title={feature.title}

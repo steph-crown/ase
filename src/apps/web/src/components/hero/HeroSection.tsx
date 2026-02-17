@@ -32,7 +32,6 @@ export function HeroSection() {
     <div className=" bg-background">
       <div className="wrapper py-5 sm:py-14">
         <div className="grid lg:grid-cols-2 gap-24 items-center">
-          {/* Left Column - constrained by wrapper on all screens */}
           <div className="min-w-0 overflow-hidden">
             <div className="">
               <h1 className="text-[40px] sm:text-5xl lg:text-[54px] xl:text-6xl text-foreground leading-[106%] font-air font-medium tracking-[-2%] mb-5">
@@ -65,7 +64,6 @@ export function HeroSection() {
               </Button>
             </div>
 
-            {/* Installation Card */}
             <Card
               className="bg-[#1B1B1D] border-0 shadow-none rounded-[0.5rem] overflow-hidden w-full max-w-[548px] ring-0 py-0"
               style={{
@@ -143,14 +141,12 @@ export function HeroSection() {
             </Card>
           </div>
 
-          {/* Desktop Terminal - inside wrapper, hidden on mobile */}
           <div className="hidden lg:block relative h-[680px]">
             <TerminalAnimation />
           </div>
         </div>
       </div>
 
-      {/* Mobile Terminal - full-bleed, outside wrapper */}
       <div className="relative h-[420px] sm:h-[600px] lg:hidden mt-8">
         <TerminalAnimation />
       </div>

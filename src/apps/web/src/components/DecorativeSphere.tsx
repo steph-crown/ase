@@ -6,7 +6,6 @@ export function DecorativeSphere() {
 
   return (
     <div className="relative w-full flex items-center justify-center py-16 sm:py-20 lg:py-24 overflow-hidden">
-      {/* Sphere Container */}
       <div
         className={cn(
           "relative w-48 h-48 sm:w-64 sm:h-64 lg:w-80 lg:h-80",
@@ -16,7 +15,6 @@ export function DecorativeSphere() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Outer Glow */}
         <div
           className={cn(
             "absolute inset-0 rounded-full",
@@ -27,7 +25,6 @@ export function DecorativeSphere() {
           )}
         />
 
-        {/* Main Sphere */}
         <div
           className={cn(
             "relative w-full h-full rounded-full",
@@ -42,7 +39,6 @@ export function DecorativeSphere() {
               : "rotateY(0deg) rotateX(0deg)",
           }}
         >
-          {/* African Pattern Overlay - Adinkra-inspired geometric patterns */}
           <svg
             className="absolute inset-0 w-full h-full"
             viewBox="0 0 200 200"
@@ -57,7 +53,6 @@ export function DecorativeSphere() {
                 height="40"
                 patternUnits="userSpaceOnUse"
               >
-                {/* Geometric diamond pattern */}
                 <path
                   d="M20,0 L30,10 L20,20 L10,10 Z"
                   fill="none"
@@ -74,7 +69,6 @@ export function DecorativeSphere() {
               </radialGradient>
             </defs>
 
-            {/* Background Pattern */}
             <rect
               width="200"
               height="200"
@@ -85,14 +79,12 @@ export function DecorativeSphere() {
               )}
             />
 
-            {/* Central Adinkra Symbol - Sankofa (bird looking back) */}
             <g
               className={cn(
                 "transition-all duration-500 origin-center",
                 isHovered ? "scale-110 rotate-12" : "animate-float"
               )}
             >
-              {/* Sankofa-inspired pattern */}
               <path
                 d="M100,60 Q80,80 70,100 Q80,120 100,140 Q120,120 130,100 Q120,80 100,60 Z"
                 fill="none"
@@ -104,7 +96,6 @@ export function DecorativeSphere() {
                   isHovered && "opacity-0.8 stroke-[2px]"
                 )}
               />
-              {/* Inner circle */}
               <circle
                 cx="100"
                 cy="100"
@@ -118,7 +109,6 @@ export function DecorativeSphere() {
                   isHovered && "opacity-0.7 stroke-[1.5px]"
                 )}
               />
-              {/* Decorative dots */}
               <circle
                 cx="100"
                 cy="75"
@@ -165,8 +155,6 @@ export function DecorativeSphere() {
               />
             </g>
 
-            {/* Decorative Geometric Shapes */}
-            {/* Top left pattern */}
             <g
               className={cn(
                 "transition-all duration-700 origin-top-left",
@@ -183,7 +171,6 @@ export function DecorativeSphere() {
               <circle cx="40" cy="40" r="3" fill="#fa912a" opacity="0.2" />
             </g>
 
-            {/* Top right pattern */}
             <g
               className={cn(
                 "transition-all duration-700 origin-top-right",
@@ -200,7 +187,6 @@ export function DecorativeSphere() {
               <circle cx="160" cy="40" r="3" fill="#fa912a" opacity="0.2" />
             </g>
 
-            {/* Bottom left pattern */}
             <g
               className={cn(
                 "transition-all duration-700 origin-bottom-left",
@@ -217,7 +203,6 @@ export function DecorativeSphere() {
               <circle cx="40" cy="160" r="3" fill="#fa912a" opacity="0.2" />
             </g>
 
-            {/* Bottom right pattern */}
             <g
               className={cn(
                 "transition-all duration-700 origin-bottom-right",
@@ -234,7 +219,6 @@ export function DecorativeSphere() {
               <circle cx="160" cy="160" r="3" fill="#fa912a" opacity="0.2" />
             </g>
 
-            {/* Orbiting decorative elements */}
             <g
               className={cn(
                 "transition-all duration-1000 origin-center",
@@ -248,7 +232,6 @@ export function DecorativeSphere() {
             </g>
           </svg>
 
-          {/* Shimmer effect */}
           <div
             className={cn(
               "absolute inset-0 rounded-full",
@@ -264,7 +247,6 @@ export function DecorativeSphere() {
           />
         </div>
 
-        {/* Floating particles around sphere */}
         {[...Array(6)].map((_, i) => (
           <div
             key={i}

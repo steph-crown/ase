@@ -16,7 +16,6 @@ export function Navigation() {
       <nav className="wrapper py-7 sm:py-10 flex items-center justify-between">
         <div className="text-primary font-agba text-2xl">àṣẹ</div>
 
-        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
             <a
@@ -49,7 +48,6 @@ export function Navigation() {
           </Button>
         </div>
 
-        {/* Mobile Menu Trigger - Fancy circular button with dots */}
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="md:hidden relative w-12 h-12 rounded-full border-2 border-primary/30 hover:border-primary transition-all duration-300 flex items-center justify-center group"
@@ -75,7 +73,6 @@ export function Navigation() {
             />
           </div>
 
-          {/* Animated dots around the circle */}
           {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
             <motion.div
               key={i}
@@ -108,11 +105,9 @@ export function Navigation() {
         </button>
       </nav>
 
-      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMenuOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -122,7 +117,6 @@ export function Navigation() {
               onClick={() => setIsMenuOpen(false)}
             />
 
-            {/* Menu Panel */}
             <motion.div
               initial={{ x: "100%", opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -138,7 +132,6 @@ export function Navigation() {
               }}
             >
               <div className="flex flex-col h-full">
-                {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-[#0A0A0B]">
                   <div className="text-primary font-agba text-xl">àṣẹ</div>
                   <button
@@ -150,7 +143,6 @@ export function Navigation() {
                   </button>
                 </div>
 
-                {/* Menu Items */}
                 <div className="flex-1 flex flex-col gap-2 p-6">
                   {navLinks.map((link, index) => (
                     <motion.a

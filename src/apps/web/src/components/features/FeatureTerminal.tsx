@@ -21,7 +21,6 @@ export function FeatureTerminal({
         className,
       )}
     >
-      {/* Terminal Header */}
       <div className="flex items-center gap-2 border-b border-[#0A0A0B] bg-card/50 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3">
         <div className="flex gap-1 sm:gap-1.5">
           <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-red-500/80" />
@@ -33,11 +32,9 @@ export function FeatureTerminal({
         </span>
       </div>
 
-      {/* Terminal Content */}
       <div className="h-full overflow-y-auto overflow-x-hidden p-3 sm:p-4 lg:p-5 font-mono text-xs sm:text-sm scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent space-y-1.5 sm:space-y-2">
         {commands.map((cmd, idx) => (
           <div key={idx} className="space-y-0.5 sm:space-y-1">
-            {/* Prompt and Command */}
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {cmd.gitBranch ? (
                 <>
@@ -62,7 +59,6 @@ export function FeatureTerminal({
                 {cmd.command}
               </span>
             </div>
-            {/* Output */}
             {cmd.output && (
               <div className="text-muted-foreground pl-4 sm:pl-6 whitespace-pre-wrap text-xs sm:text-sm break-words">
                 {cmd.output}

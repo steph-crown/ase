@@ -1,6 +1,26 @@
 import { FeatureTerminal } from "./FeatureTerminal";
 import { cn } from "@/lib/utils";
 
+function DescriptionWithCode({ text }: { text: string }) {
+  const parts = text.split(/(`[^`]+`)/g);
+  return (
+    <p className="text-xs sm:text-sm lg:text-base text-[#999999] font-semibold leading-relaxed font-air">
+      {parts.map((part, i) =>
+        part.startsWith("`") && part.endsWith("`") ? (
+          <code
+            key={i}
+            className="font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded"
+          >
+            {part.slice(1, -1)}
+          </code>
+        ) : (
+          part
+        ),
+      )}
+    </p>
+  );
+}
+
 interface FeatureCardProps {
   title: string;
   description: string;
@@ -21,21 +41,15 @@ export function FeatureCard({
 }: FeatureCardProps) {
   return (
     <div className={cn("flex flex-col gap-6", className)}>
-      {/* Title and Description */}
       <div className="space-y-2 sm:space-y-3">
         <h3 className="text-xl sm:text-2xl lg:text-3xl font-medium text-foreground font-air leading-tight">
           {title}
         </h3>
-        <p className="text-xs sm:text-sm lg:text-base text-[#999999] font-semibold leading-relaxed font-air">
-          {description}
-        </p>
+        <DescriptionWithCode text={description} />
       </div>
 
-      {/* Terminal Container with Animated Patterned Background */}
       <div className="relative w-full h-[280px] sm:h-[380px] lg:h-[450px] rounded-[0.5rem] overflow-hidden">
-        {/* Animated Patterned Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5">
-          {/* Animated Wave Pattern */}
           <div className="absolute inset-0 opacity-30">
             <svg
               className="absolute inset-0 w-full h-full"
@@ -56,20 +70,17 @@ export function FeatureCard({
                   <stop offset="100%" stopColor="#fa912a" stopOpacity="0.1" />
                 </linearGradient>
               </defs>
-              {/* Animated Wave 1 */}
               <path
                 d="M0,300 Q300,200 600,300 T1200,300 L1200,600 L0,600 Z"
                 fill={`url(#wave-gradient-${title.replace(/\s+/g, "-").toLowerCase()})`}
                 className="animate-wave-1"
               />
-              {/* Animated Wave 2 */}
               <path
                 d="M0,400 Q400,300 800,400 T1200,400 L1200,600 L0,600 Z"
                 fill={`url(#wave-gradient-${title.replace(/\s+/g, "-").toLowerCase()})`}
                 className="animate-wave-2"
                 opacity="0.6"
               />
-              {/* Animated Wave 3 */}
               <path
                 d="M0,500 Q500,400 1000,500 T1200,500 L1200,600 L0,600 Z"
                 fill={`url(#wave-gradient-${title.replace(/\s+/g, "-").toLowerCase()})`}
@@ -79,7 +90,6 @@ export function FeatureCard({
             </svg>
           </div>
 
-          {/* Animated Stripes Pattern */}
           <div className="absolute inset-0 opacity-20">
             <div
               className="absolute inset-0"
@@ -98,7 +108,6 @@ export function FeatureCard({
           </div>
         </div>
 
-        {/* Terminal - ~10px offset on mobile, ~40px on desktop */}
         <div className="absolute inset-0 flex items-center justify-center p-2.5 lg:p-10">
           <div className="w-full h-full">
             <FeatureTerminal commands={commands} />

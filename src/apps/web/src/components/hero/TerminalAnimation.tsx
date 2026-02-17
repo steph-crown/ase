@@ -128,15 +128,12 @@ export function TerminalAnimation() {
   const isTypingRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Handle command progression
   useEffect(() => {
     const startNextCommand = () => {
-      // Loop back to first command (circular flow)
       const cmdIndex = currentCommandIndex % terminalCommands.length;
       const cmd = terminalCommands[cmdIndex];
       const prompt = cmd.gitBranch ? `àṣẹ > (${cmd.gitBranch})` : `àṣẹ >`;
 
-      // Create new command entry
       const newCommand: CommandEntry = {
         id: commandIdRef.current++,
         prompt,
@@ -155,7 +152,6 @@ export function TerminalAnimation() {
         newCommand,
       ]);
 
-      // Type command character by character
       let charIndex = 0;
       const typeNextChar = () => {
         if (charIndex < cmd.command.length) {
@@ -172,7 +168,6 @@ export function TerminalAnimation() {
             50 + Math.random() * 30,
           );
         } else {
-          // Command typed, show output after delay
           setTimeout(() => {
             setCommands((prev) =>
               prev.map((c) =>
@@ -183,7 +178,6 @@ export function TerminalAnimation() {
             );
             isTypingRef.current = false;
 
-            // Move to next command after showing output
             setTimeout(() => {
               setCurrentCommandIndex(
                 (prev) => (prev + 1) % terminalCommands.length,
@@ -196,7 +190,6 @@ export function TerminalAnimation() {
       typeNextChar();
     };
 
-    // Check if we need to start a new command
     if (!isTypingRef.current) {
       cycleTimeoutRef.current = setTimeout(startNextCommand, 800);
     }
@@ -207,7 +200,6 @@ export function TerminalAnimation() {
     };
   }, [currentCommandIndex]);
 
-  // Auto-scroll to bottom when new content is added
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({
@@ -217,7 +209,6 @@ export function TerminalAnimation() {
     }
   }, [commands]);
 
-  // Remove old commands (keep only last 8 for better visibility)
   useEffect(() => {
     if (commands.length > 8) {
       setCommands((prev) => prev.slice(-8));
@@ -231,7 +222,6 @@ export function TerminalAnimation() {
         boxShadow: "0 2px 4px 2px rgba(0, 0, 0, 0.1)",
       }}
     >
-      {/* Terminal header */}
       <div className="flex items-center gap-2 border-b border-[#0A0A0B] bg-card/50 px-5 py-3">
         <div className="flex gap-1.5">
           <div className="h-3 w-3 rounded-full bg-red-500/80" />
@@ -242,7 +232,6 @@ export function TerminalAnimation() {
         <span className="text-xs text-muted-foreground font-mono">àṣẹ</span>
       </div>
 
-      {/* Terminal content */}
       <div
         ref={scrollContainerRef}
         className="h-full overflow-y-auto overflow-x-hidden p-5 font-mono text-sm scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
@@ -259,7 +248,6 @@ export function TerminalAnimation() {
                 transition={{ duration: 0.3 }}
                 className={`relative ${cmd.isActive ? "ring-2 ring-primary/30 rounded px-2 py-1 -mx-2 -my-1" : ""}`}
               >
-                {/* Prompt */}
                 <div className="flex items-center gap-2 mb-1">
                   {cmd.gitBranch ? (
                     <>
@@ -275,7 +263,6 @@ export function TerminalAnimation() {
                   )}
                 </div>
 
-                {/* Command being typed */}
                 <div className="flex items-center gap-2">
                   <span className="text-primary">$</span>
                   <span className="text-foreground">
@@ -294,7 +281,6 @@ export function TerminalAnimation() {
                   )}
                 </div>
 
-                {/* Output */}
                 {cmd.showOutput && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -311,7 +297,6 @@ export function TerminalAnimation() {
         </div>
       </div>
 
-      {/* Subtle glow effect on active command */}
       {commands.some((c) => c.isActive) && (
         <motion.div
           className="absolute inset-0 pointer-events-none"

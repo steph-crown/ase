@@ -166,7 +166,6 @@
   }
 }
 
-/* Feature Card Patterned Background Animations */
 @keyframes wave-1 {
   0% {
     transform: translateX(0) translateY(0);
@@ -224,7 +223,6 @@
   animation: wave-3 12s ease-in-out infinite;
 }
 
-/* Decorative Sphere Animations */
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
