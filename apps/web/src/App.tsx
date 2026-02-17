@@ -9,10 +9,12 @@ export function App() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <HeroSection />
-      <FeaturesSection />
-      <InstallSection />
-      <Footer />
+      <main id="main" tabIndex={-1}>
+        <HeroSection />
+        <FeaturesSection />
+        <InstallSection />
+        <Footer />
+      </main>
       <Toaster position="bottom-center" />
     </div>
   );

@@ -117,10 +117,10 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-16 sm:py-24 lg:py-32 bg-background">
+    <section id="features" className="py-16 sm:py-24 lg:py-32 bg-background" aria-labelledby="features-heading">
       <div className="wrapper">
         <div className="text-center mb-10 sm:mb-12 lg:mb-16">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-medium text-foreground leading-[106%] font-air tracking-[-2%] mb-3 sm:mb-4 px-4 sm:px-0">
+          <h2 id="features-heading" className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-medium text-foreground leading-[106%] font-air tracking-[-2%] mb-3 sm:mb-4 px-4 sm:px-0">
             <span className="text-primary">Everything</span> You Need
           </h2>
           <p className="text-sm sm:text-base text-[#999999] font-semibold max-w-2xl mx-auto font-air px-4 sm:px-0">

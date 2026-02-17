@@ -1,15 +1,16 @@
 import * as React from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TerminalAnimation } from "./TerminalAnimation";
 import { cn } from "@/lib/utils";
 
 const installationCommands = {
-  mac: "brew install ase-shell",
-  windows: "iwr https://ase.sh/install.ps1 | iex",
-  linux: "curl -fsSL https://ase.sh/install.sh | sh",
+  mac: "brew install steph-crown/tap/ase-shell",
+  linux:
+    "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/steph-crown/ase/releases/download/v0.2.0/ase-shell-installer.sh | sh",
+  windows:
+    "powershell -ExecutionPolicy Bypass -c \"irm https://github.com/steph-crown/ase/releases/download/v0.2.0/ase-shell-installer.ps1 | iex\"",
   npm: "npm install -g ase-shell",
   cargo: "cargo install ase-shell",
 };
@@ -51,17 +52,20 @@ export function HeroSection() {
             </div>
 
             <div className="flex gap-4 mt-10 mb-16 sm:mb-20 lg:mb-33">
-              <Button className="bg-primary text-white hover:bg-primary/90 py-3 px-5 h-11 text-sm font-medium">
+              <a
+                href="#install"
+                className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-3 h-11 text-sm font-medium text-white hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+              >
                 Get Started
-              </Button>
-
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-[#31271E] h-11 py-3 px-5 text-sm font-medium"
+              </a>
+              <a
+                href="https://github.com/steph-crown/ase"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-md border border-[#31271E] bg-transparent px-5 py-3 h-11 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
               >
                 View on GitHub
-              </Button>
+              </a>
             </div>
 
             <Card
@@ -107,7 +111,7 @@ export function HeroSection() {
                         className="mt-0 p-6 min-w-0"
                       >
                         <div className="flex items-center gap-3 font-mono text-sm min-w-0">
-                          <span className="text-muted-foreground flex-shrink-0">
+                          <span className="text-muted-foreground shrink-0">
                             $
                           </span>
                           <span className="text-primary flex-1 min-w-0 truncate">

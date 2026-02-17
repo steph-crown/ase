@@ -1,6 +1,5 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
 export function Navigation() {
@@ -13,8 +12,8 @@ export function Navigation() {
 
   return (
     <>
-      <nav className="wrapper py-7 sm:py-10 flex items-center justify-between">
-        <div className="text-primary font-agba text-2xl">àṣẹ</div>
+      <nav className="wrapper py-7 sm:py-10 flex items-center justify-between" aria-label="Main">
+        <a href="/" className="text-primary font-agba text-2xl" aria-label="àṣẹ home">àṣẹ</a>
 
         <div className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
@@ -27,9 +26,11 @@ export function Navigation() {
             </a>
           ))}
 
-          <Button
-            variant="ghost"
-            className="flex items-center gap-2 text-[#9898A0] hover:text-primary transition-colors font-semibold text-sm rounded-[0.5rem]"
+          <a
+            href="https://github.com/steph-crown/ase"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-[#9898A0] hover:text-primary transition-colors font-semibold text-sm rounded-[0.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <svg
               width="24"
@@ -45,7 +46,7 @@ export function Navigation() {
               />
             </svg>
             Star on GitHub
-          </Button>
+          </a>
         </div>
 
         <button
@@ -172,9 +173,11 @@ export function Navigation() {
                     }}
                     className="mt-4 pt-4 border-t border-[#0A0A0B]"
                   >
-                    <Button
-                      variant="ghost"
-                      className="w-full flex items-center justify-center gap-2 text-[#9898A0] hover:text-primary transition-colors font-semibold text-lg py-4 rounded-[0.5rem] cursor-pointer"
+                    <a
+                      href="https://github.com/steph-crown/ase"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 text-[#9898A0] hover:text-primary transition-colors font-semibold text-lg py-4 rounded-[0.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <svg
                         width="24"
@@ -190,7 +193,7 @@ export function Navigation() {
                         />
                       </svg>
                       Star on GitHub
-                    </Button>
+                    </a>
                   </motion.div>
                 </div>
               </div>

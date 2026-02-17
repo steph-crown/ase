@@ -12,7 +12,7 @@ export function Footer() {
           <div className="text-primary font-agba text-xl sm:text-2xl">
             àṣẹ
           </div>
-          <nav className="flex items-center gap-6 sm:gap-8">
+          <nav className="flex items-center gap-6 sm:gap-8" aria-label="Footer">
             {footerLinks.map((link) => (
               <a
                 key={link.href}
