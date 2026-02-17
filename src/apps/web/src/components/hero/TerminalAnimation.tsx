@@ -121,7 +121,6 @@ const terminalCommands = [
 
 export function TerminalAnimation() {
   const [commands, setCommands] = useState<CommandEntry[]>([]);
-  const [isPaused, setIsPaused] = useState(false);
   const [currentCommandIndex, setCurrentCommandIndex] = useState(0);
   const commandIdRef = useRef(0);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
@@ -131,8 +130,6 @@ export function TerminalAnimation() {
 
   // Handle command progression
   useEffect(() => {
-    if (isPaused) return;
-
     const startNextCommand = () => {
       // Loop back to first command (circular flow)
       const cmdIndex = currentCommandIndex % terminalCommands.length;
@@ -161,11 +158,6 @@ export function TerminalAnimation() {
       // Type command character by character
       let charIndex = 0;
       const typeNextChar = () => {
-        if (isPaused) {
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-          return;
-        }
-
         if (charIndex < cmd.command.length) {
           setCommands((prev) =>
             prev.map((c) =>
@@ -213,17 +205,17 @@ export function TerminalAnimation() {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (cycleTimeoutRef.current) clearTimeout(cycleTimeoutRef.current);
     };
-  }, [currentCommandIndex, isPaused]);
+  }, [currentCommandIndex]);
 
   // Auto-scroll to bottom when new content is added
   useEffect(() => {
-    if (scrollContainerRef.current && !isPaused) {
+    if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({
         top: scrollContainerRef.current.scrollHeight,
         behavior: "smooth",
       });
     }
-  }, [commands, isPaused]);
+  }, [commands]);
 
   // Remove old commands (keep only last 8 for better visibility)
   useEffect(() => {
@@ -235,8 +227,6 @@ export function TerminalAnimation() {
   return (
     <div
       className="relative h-full w-full overflow-hidden rounded-[0.5rem] border border-[#29292b] bg-[#1B1B1D]"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
       style={{
         boxShadow: "0 2px 4px 2px rgba(0, 0, 0, 0.1)",
       }}
@@ -250,15 +240,6 @@ export function TerminalAnimation() {
         </div>
 
         <span className="text-xs text-muted-foreground font-mono">àṣẹ</span>
-        {isPaused && (
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="ml-auto text-xs text-muted-foreground"
-          >
-            Paused
-          </motion.span>
-        )}
       </div>
 
       {/* Terminal content */}

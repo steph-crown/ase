@@ -8,21 +8,21 @@ export function Navigation() {
       <div className="flex items-center gap-6">
         <a
           href="#download"
-          className="text-[#9898A0] hover:text-primary transition-colors font-semibold text-base"
+          className="text-[#9898A0] hover:text-primary transition-colors font-semibold text-sm"
         >
           Download
         </a>
 
         <a
           href="#features"
-          className="text-[#9898A0] hover:text-primary transition-colors font-semibold text-base"
+          className="text-[#9898A0] hover:text-primary transition-colors font-semibold text-sm"
         >
           Features
         </a>
 
         <Button
           variant="ghost"
-          className="flex items-center gap-2 text-[#9898A0] hover:text-primary transition-colors font-semibold text-base"
+          className="flex items-center gap-2 text-[#9898A0] hover:text-primary transition-colors font-semibold text-sm"
         >
           <svg
             width="24"
