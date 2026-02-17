@@ -26,9 +26,20 @@ export function Footer() {
             ))}
           </nav>
         </div>
-        <div className="mt-8 pt-8 border-t border-[#3b3440] text-center sm:text-left">
-          <p className="text-xs text-[#777778] font-air">
+        <div className="mt-8 pt-8 border-t border-[#3b3440] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-[#777778] font-air order-2 sm:order-1">
             MIT OR Apache-2.0 · A small Unix-style shell in Rust
+          </p>
+          <p className="text-xs text-[#777778] font-air order-1 sm:order-2">
+            Built with <span className="text-primary">❤</span> by{" "}
+            <a
+              href="https://stephcrown.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Stephen
+            </a>
           </p>
         </div>
       </div>

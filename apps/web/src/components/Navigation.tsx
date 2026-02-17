@@ -29,7 +29,7 @@ export function Navigation() {
 
           <Button
             variant="ghost"
-            className="flex items-center gap-2 text-[#9898A0] hover:text-primary transition-colors font-semibold text-sm"
+            className="flex items-center gap-2 text-[#9898A0] hover:text-primary transition-colors font-semibold text-sm rounded-[0.5rem]"
           >
             <svg
               width="24"
@@ -174,7 +174,7 @@ export function Navigation() {
                   >
                     <Button
                       variant="ghost"
-                      className="w-full flex items-center justify-center gap-2 text-[#9898A0] hover:text-primary transition-colors font-semibold text-lg py-4"
+                      className="w-full flex items-center justify-center gap-2 text-[#9898A0] hover:text-primary transition-colors font-semibold text-lg py-4 rounded-[0.5rem] cursor-pointer"
                     >
                       <svg
                         width="24"

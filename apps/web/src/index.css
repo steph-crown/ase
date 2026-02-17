@@ -159,7 +159,7 @@
     @apply font-air bg-background text-foreground;
   }
   html {
-    @apply font-air;
+    @apply font-air scroll-smooth;
   }
   .wrapper {
     @apply max-w-350 mx-auto px-5 sm:px-6 lg:px-12;
