@@ -234,17 +234,21 @@ export function TerminalAnimation() {
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden rounded-lg border border-border bg-card"
+      className="relative h-full w-full overflow-hidden rounded-[0.5rem] border border-[#29292b] bg-[#1B1B1D]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      style={{
+        boxShadow: "0 2px 4px 2px rgba(0, 0, 0, 0.1)",
+      }}
     >
       {/* Terminal header */}
-      <div className="flex items-center gap-2 border-b border-border bg-card/50 px-4 py-2">
+      <div className="flex items-center gap-2 border-b border-[#0A0A0B] bg-card/50 px-5 py-3">
         <div className="flex gap-1.5">
           <div className="h-3 w-3 rounded-full bg-red-500/80" />
           <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
           <div className="h-3 w-3 rounded-full bg-green-500/80" />
         </div>
+
         <span className="text-xs text-muted-foreground font-mono">àṣẹ</span>
         {isPaused && (
           <motion.span
@@ -260,7 +264,7 @@ export function TerminalAnimation() {
       {/* Terminal content */}
       <div
         ref={scrollContainerRef}
-        className="h-full overflow-y-auto overflow-x-hidden p-4 font-mono text-sm scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+        className="h-full overflow-y-auto overflow-x-hidden p-5 font-mono text-sm scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
         style={{ scrollbarWidth: "thin" }}
       >
         <div className="flex flex-col gap-3 pb-8">

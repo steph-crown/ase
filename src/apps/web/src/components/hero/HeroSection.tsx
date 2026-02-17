@@ -124,7 +124,7 @@ export function HeroSection() {
           </div>
 
           {/* Right Column - Animation */}
-          <div className="relative h-[600px] lg:h-[700px] ">
+          <div className="relative h-[600px] lg:h-[680px] ">
             <TerminalAnimation />
           </div>
         </div>
