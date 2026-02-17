@@ -29,10 +29,10 @@ export function HeroSection() {
   };
 
   return (
-    <div className=" min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <div className="wrapper py-5 sm:py-14">
         <div className="grid lg:grid-cols-2 gap-24 items-center">
-          {/* Left Column - min-w-0 so grid allows shrink; overflow-hidden so card can't overflow */}
+          {/* Left Column - constrained by wrapper on all screens */}
           <div className="min-w-0 overflow-hidden">
             <div className="">
               <h1 className="text-[40px] sm:text-5xl lg:text-[54px] xl:text-6xl text-foreground leading-[106%] font-air font-medium tracking-[-2%] mb-5">
@@ -51,7 +51,7 @@ export function HeroSection() {
               </p>
             </div>
 
-            <div className="flex gap-4 mt-10 mb-33">
+            <div className="flex gap-4 mt-10 mb-16 sm:mb-20 lg:mb-33">
               <Button className="bg-primary text-white hover:bg-primary/90 py-3 px-5 h-11 text-sm font-medium">
                 Get Started
               </Button>
@@ -87,7 +87,7 @@ export function HeroSection() {
                           key={key}
                           value={key}
                           className={cn(
-                            "flex-shrink-0 px-2 py-3.5 text-sm leading-[20px] font-air font-medium cursor-pointer ",
+                            "shrink-0 px-2 py-3.5 text-sm leading-[20px] font-air font-medium cursor-pointer ",
                             activeTab === key
                               ? "text-[#ccc]"
                               : "text-[#777778]",
@@ -143,11 +143,16 @@ export function HeroSection() {
             </Card>
           </div>
 
-          {/* Right Column - Animation */}
-          <div className="relative h-[600px] lg:h-[680px] ">
+          {/* Desktop Terminal - inside wrapper, hidden on mobile */}
+          <div className="hidden lg:block relative h-[680px]">
             <TerminalAnimation />
           </div>
         </div>
+      </div>
+
+      {/* Mobile Terminal - full-bleed, outside wrapper */}
+      <div className="relative h-[420px] sm:h-[600px] lg:hidden mt-8">
+        <TerminalAnimation />
       </div>
     </div>
   );

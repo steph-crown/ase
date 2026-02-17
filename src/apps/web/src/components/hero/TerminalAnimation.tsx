@@ -226,7 +226,7 @@ export function TerminalAnimation() {
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden rounded-[0.5rem] border border-[#29292b] bg-[#1B1B1D]"
+      className="relative h-full w-full overflow-hidden border border-[#29292b] bg-[#1B1B1D] rounded-none border-x-0 lg:rounded-[0.5rem] lg:border-x"
       style={{
         boxShadow: "0 2px 4px 2px rgba(0, 0, 0, 0.1)",
       }}
