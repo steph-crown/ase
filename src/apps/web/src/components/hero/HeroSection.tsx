@@ -1,9 +1,9 @@
 import * as React from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TerminalAnimation } from "./TerminalAnimation";
-import { Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const installationCommands = {
@@ -16,14 +16,16 @@ const installationCommands = {
 
 export function HeroSection() {
   const [activeTab, setActiveTab] = React.useState("mac");
-  const [copied, setCopied] = React.useState(false);
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     const command =
       installationCommands[activeTab as keyof typeof installationCommands];
-    navigator.clipboard.writeText(command);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(command);
+      toast.success("Copied to clipboard");
+    } catch {
+      toast.error("Failed to copy");
+    }
   };
 
   return (
@@ -70,7 +72,7 @@ export function HeroSection() {
             >
               <CardContent className="p-0">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="w-full justify-start border-b border-border bg-transparent  p-0 px-5 h-auto gap-4">
+                  <TabsList className="w-full justify-start border-b border-[#0A0A0B] bg-transparent  p-0 px-5 h-auto gap-4">
                     {Object.keys(installationCommands).map((key) => (
                       <TabsTrigger
                         key={key}
