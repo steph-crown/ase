@@ -123,8 +123,8 @@ export function TerminalAnimation() {
   const [commands, setCommands] = useState<CommandEntry[]>([]);
   const [currentCommandIndex, setCurrentCommandIndex] = useState(0);
   const commandIdRef = useRef(0);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
-  const cycleTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const cycleTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const isTypingRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 

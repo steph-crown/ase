@@ -16,17 +16,13 @@ export function TerminalCard({
   command,
   output,
   gitBranch,
-  delay = 0,
+  delay: _delay = 0,
   className,
-  onGround = false,
-  x = 0,
-  y = 0,
-  rotation = 0,
+  onGround: _onGround = false,
+  x: _x = 0,
+  y: _y = 0,
+  rotation: _rotation = 0,
 }: TerminalCardProps) {
-  const prompt = gitBranch
-    ? `\x1b[32màṣẹ\x1b[0m \x1b[1m>\x1b[0m \x1b[33m(${gitBranch})\x1b[0m`
-    : `\x1b[32màṣẹ\x1b[0m \x1b[1m>\x1b[0m`;
-
   return (
     <div
       className={cn(
