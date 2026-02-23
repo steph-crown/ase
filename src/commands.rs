@@ -27,9 +27,9 @@ pub enum RunResult {
   Exit(u8),
 }
 
-const BUILTIN_NAMES: &[&str] = &["cd", "echo", "exit", "type", "pwd", "history"];
+const BUILTIN_NAMES: &[&str] = &["cd", "echo", "exit", "type", "pwd", "history", "ls"];
 
-fn is_builtin(name: &str) -> bool {
+pub fn is_builtin(name: &str) -> bool {
   BUILTIN_NAMES.contains(&name)
 }
 
@@ -212,6 +212,11 @@ pub enum Cmd {
     stdout: StdoutTarget,
     stderr: StderrTarget,
   },
+  Ls {
+    cmd: Command,
+    stdout: StdoutTarget,
+    stderr: StderrTarget,
+  },
   Unknown {
     cmd: Command,
     stderr: StderrTarget,
@@ -270,6 +275,11 @@ impl Cmd {
         stderr,
       },
       "pwd" => Cmd::Pwd { stdout, stderr },
+      "ls" => Cmd::Ls {
+        cmd: Command::new(cmd_name, None, args),
+        stdout,
+        stderr,
+      },
       _ => {
         if cmd_name.contains('/') {
           Cmd::Exec {
@@ -374,6 +384,21 @@ impl Cmd {
           writeln!(out, "  {:>4}  {entry}", idx + 1)?;
         }
         Ok((RunResult::Continue, 0))
+      }
+      Cmd::Ls {
+        cmd,
+        stdout,
+        stderr,
+      } => {
+        let status = match run_ls(&cmd.args, stdout) {
+          Ok(()) => 0,
+          Err(err) => {
+            let mut err_out = open_stderr_writer(stderr)?;
+            writeln!(err_out, "{shell_name}: ls: {err}")?;
+            1
+          }
+        };
+        Ok((RunResult::Continue, status))
       }
       Cmd::Unknown { cmd, stderr } => {
         let mut err_out = open_stderr_writer(stderr)?;
@@ -601,6 +626,9 @@ pub fn resolve_types(args: &[String]) -> String {
 }
 
 pub fn find_executable(cmd: &str) -> Option<PathBuf> {
+  if cmd.is_empty() {
+    return None;
+  }
   find_executable_in_path(cmd)
 }
 
@@ -668,6 +696,102 @@ pub fn change_dir(target: &str) -> anyhow::Result<()> {
   }
 
   Ok(())
+}
+
+const COLOR_DIR: &str = "\x1b[38;2;250;145;42m";   // #fa912a
+const COLOR_HIDDEN: &str = "\x1b[38;5;245m";       // grey
+const COLOR_RESET: &str = "\x1b[0m";
+
+fn run_ls(args: &[String], stdout_target: &StdoutTarget) -> anyhow::Result<()> {
+  let mut show_all = false;
+  let mut long_format = false;
+  let mut paths: Vec<String> = Vec::new();
+
+  for arg in args {
+    if arg.starts_with('-') && !arg.starts_with("--") {
+      for ch in arg[1..].chars() {
+        match ch {
+          'a' => show_all = true,
+          'l' => long_format = true,
+          _ => {}
+        }
+      }
+    } else {
+      paths.push(arg.clone());
+    }
+  }
+
+  if paths.is_empty() {
+    paths.push(".".to_string());
+  }
+
+  let multiple = paths.len() > 1;
+  let mut out = open_writer(stdout_target)?;
+
+  for (i, path_str) in paths.iter().enumerate() {
+    let path = Path::new(path_str);
+    if !path.exists() {
+      writeln!(out, "ls: cannot access '{path_str}': No such file or directory")?;
+      continue;
+    }
+
+    if !path.is_dir() {
+      let name = path.file_name().unwrap_or_default().to_string_lossy();
+      writeln!(out, "{name}")?;
+      continue;
+    }
+
+    if multiple {
+      if i > 0 {
+        writeln!(out)?;
+      }
+      writeln!(out, "{path_str}:")?;
+    }
+
+    let mut entries: Vec<(String, bool)> = Vec::new();
+    for entry in fs::read_dir(path)? {
+      let entry = entry?;
+      let name = entry.file_name().to_string_lossy().into_owned();
+      let is_hidden = name.starts_with('.');
+      if !show_all && is_hidden {
+        continue;
+      }
+      let is_dir = entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
+      entries.push((name, is_dir));
+    }
+    entries.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
+
+    if long_format {
+      for (name, is_dir) in &entries {
+        let is_hidden = name.starts_with('.');
+        let colored = colorize_ls_entry(name, *is_dir, is_hidden);
+        writeln!(out, "{colored}")?;
+      }
+    } else {
+      let colored: Vec<String> = entries
+        .iter()
+        .map(|(name, is_dir)| {
+          let is_hidden = name.starts_with('.');
+          colorize_ls_entry(name, *is_dir, is_hidden)
+        })
+        .collect();
+      writeln!(out, "{}", colored.join("  "))?;
+    }
+  }
+
+  Ok(())
+}
+
+fn colorize_ls_entry(name: &str, is_dir: bool, is_hidden: bool) -> String {
+  if is_dir && is_hidden {
+    format!("{COLOR_HIDDEN}{name}/{COLOR_RESET}")
+  } else if is_dir {
+    format!("{COLOR_DIR}{name}/{COLOR_RESET}")
+  } else if is_hidden {
+    format!("{COLOR_HIDDEN}{name}{COLOR_RESET}")
+  } else {
+    name.to_string()
+  }
 }
 
 pub fn echo_args<W: Write>(args: &[String], out: &mut W) -> anyhow::Result<()> {
