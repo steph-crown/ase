@@ -698,9 +698,110 @@ pub fn change_dir(target: &str) -> anyhow::Result<()> {
   Ok(())
 }
 
-const COLOR_DIR: &str = "\x1b[38;5;208m";           // #fa912a (256-color for broad terminal support)
-const COLOR_HIDDEN: &str = "\x1b[38;5;245m";       // grey
+const COLOR_DIR: &str = "\x1b[38;5;208m"; // #fa912a (256-color for broad terminal support)
+const COLOR_HIDDEN: &str = "\x1b[38;5;245m"; // grey
 const COLOR_RESET: &str = "\x1b[0m";
+
+fn terminal_width() -> usize {
+  #[cfg(unix)]
+  {
+    unsafe {
+      let mut ws: libc::winsize = std::mem::zeroed();
+      if libc::ioctl(libc::STDOUT_FILENO, libc::TIOCGWINSZ, &mut ws) == 0 && ws.ws_col > 0 {
+        return ws.ws_col as usize;
+      }
+    }
+  }
+  80
+}
+
+fn display_name(name: &str, is_dir: bool) -> String {
+  if is_dir {
+    format!("{name}/")
+  } else {
+    name.to_string()
+  }
+}
+
+fn colorize_ls_entry(display: &str, is_dir: bool, is_hidden: bool) -> String {
+  if is_dir && is_hidden {
+    format!("{COLOR_HIDDEN}{display}{COLOR_RESET}")
+  } else if is_dir {
+    format!("{COLOR_DIR}{display}{COLOR_RESET}")
+  } else if is_hidden {
+    format!("{COLOR_HIDDEN}{display}{COLOR_RESET}")
+  } else {
+    display.to_string()
+  }
+}
+
+/// Print entries in a column grid that fills top-to-bottom, left-to-right (like system `ls`).
+fn print_columns<W: Write>(
+  out: &mut W,
+  entries: &[(String, bool)],
+  term_width: usize,
+) -> anyhow::Result<()> {
+  if entries.is_empty() {
+    return Ok(());
+  }
+
+  let displays: Vec<String> = entries
+    .iter()
+    .map(|(name, is_dir)| display_name(name, *is_dir))
+    .collect();
+
+  let col_gap = 14usize;
+  let count = displays.len();
+
+  // Try increasing number of columns until they no longer fit
+  let mut best_ncols = 1usize;
+  let mut best_col_widths: Vec<usize> = vec![0];
+
+  for ncols in 1..=count {
+    let nrows = (count + ncols - 1) / ncols;
+    let mut col_widths = vec![0usize; ncols];
+
+    for (i, d) in displays.iter().enumerate() {
+      let col = i / nrows;
+      col_widths[col] = col_widths[col].max(d.len());
+    }
+
+    let total: usize = col_widths.iter().sum::<usize>() + col_gap * ncols.saturating_sub(1);
+    if total <= term_width {
+      best_ncols = ncols;
+      best_col_widths = col_widths;
+    } else {
+      break;
+    }
+  }
+
+  let nrows = (count + best_ncols - 1) / best_ncols;
+
+  for row in 0..nrows {
+    let mut line = String::new();
+    for col in 0..best_ncols {
+      let idx = col * nrows + row;
+      if idx >= count {
+        break;
+      }
+      let (name, is_dir) = &entries[idx];
+      let d = &displays[idx];
+      let is_hidden = name.starts_with('.');
+      let colored = colorize_ls_entry(d, *is_dir, is_hidden);
+
+      if col + 1 < best_ncols && (col + 1) * nrows + row < count {
+        let pad = best_col_widths[col] - d.len() + col_gap;
+        line.push_str(&colored);
+        line.extend(std::iter::repeat(' ').take(pad));
+      } else {
+        line.push_str(&colored);
+      }
+    }
+    writeln!(out, "{line}")?;
+  }
+
+  Ok(())
+}
 
 fn run_ls(args: &[String], stdout_target: &StdoutTarget) -> anyhow::Result<()> {
   let mut show_all = false;
@@ -727,11 +828,15 @@ fn run_ls(args: &[String], stdout_target: &StdoutTarget) -> anyhow::Result<()> {
 
   let multiple = paths.len() > 1;
   let mut out = open_writer(stdout_target)?;
+  let tw = terminal_width();
 
   for (i, path_str) in paths.iter().enumerate() {
     let path = Path::new(path_str);
     if !path.exists() {
-      writeln!(out, "ls: cannot access '{path_str}': No such file or directory")?;
+      writeln!(
+        out,
+        "ls: cannot access '{path_str}': No such file or directory"
+      )?;
       continue;
     }
 
@@ -749,6 +854,10 @@ fn run_ls(args: &[String], stdout_target: &StdoutTarget) -> anyhow::Result<()> {
     }
 
     let mut entries: Vec<(String, bool)> = Vec::new();
+    if show_all {
+      entries.push((".".to_string(), true));
+      entries.push(("..".to_string(), true));
+    }
     for entry in fs::read_dir(path)? {
       let entry = entry?;
       let name = entry.file_name().to_string_lossy().into_owned();
@@ -764,34 +873,16 @@ fn run_ls(args: &[String], stdout_target: &StdoutTarget) -> anyhow::Result<()> {
     if long_format {
       for (name, is_dir) in &entries {
         let is_hidden = name.starts_with('.');
-        let colored = colorize_ls_entry(name, *is_dir, is_hidden);
+        let d = display_name(name, *is_dir);
+        let colored = colorize_ls_entry(&d, *is_dir, is_hidden);
         writeln!(out, "{colored}")?;
       }
     } else {
-      let colored: Vec<String> = entries
-        .iter()
-        .map(|(name, is_dir)| {
-          let is_hidden = name.starts_with('.');
-          colorize_ls_entry(name, *is_dir, is_hidden)
-        })
-        .collect();
-      writeln!(out, "{}", colored.join("  "))?;
+      print_columns(&mut out, &entries, tw)?;
     }
   }
 
   Ok(())
-}
-
-fn colorize_ls_entry(name: &str, is_dir: bool, is_hidden: bool) -> String {
-  if is_dir && is_hidden {
-    format!("{COLOR_HIDDEN}{name}/{COLOR_RESET}")
-  } else if is_dir {
-    format!("{COLOR_DIR}{name}/{COLOR_RESET}")
-  } else if is_hidden {
-    format!("{COLOR_HIDDEN}{name}{COLOR_RESET}")
-  } else {
-    name.to_string()
-  }
 }
 
 pub fn echo_args<W: Write>(args: &[String], out: &mut W) -> anyhow::Result<()> {
