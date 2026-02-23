@@ -698,7 +698,7 @@ pub fn change_dir(target: &str) -> anyhow::Result<()> {
   Ok(())
 }
 
-const COLOR_DIR: &str = "\x1b[38;2;250;145;42m";   // #fa912a
+const COLOR_DIR: &str = "\x1b[38;5;208m";           // #fa912a (256-color for broad terminal support)
 const COLOR_HIDDEN: &str = "\x1b[38;5;245m";       // grey
 const COLOR_RESET: &str = "\x1b[0m";
 
