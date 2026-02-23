@@ -1,4 +1,4 @@
-# àṣẹ (ase-shell)
+# àṣẹ ("ah-sheh")
 
 àṣẹ (pronounced roughly “ah‑sheh”) is a small Unix-style interactive shell written in Rust.
 
@@ -146,7 +146,7 @@ brew install steph-crown/tap/ase-shell
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/steph-crown/ase/releases/download/v0.2.0/ase-shell-installer.sh | sh
+  https://github.com/steph-crown/ase/releases/download/v0.2.2/ase-shell-installer.sh | sh
 ```
 
 This downloads the appropriate binary for your platform and puts `ase` on your `PATH`.
@@ -157,7 +157,7 @@ This downloads the appropriate binary for your platform and puts `ase` on your `
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/steph-crown/ase/releases/download/v0.2.0/ase-shell-installer.sh | sh
+  https://github.com/steph-crown/ase/releases/download/v0.2.2/ase-shell-installer.sh | sh
 ```
 
 Alternatively, grab the tarball for your architecture from the
@@ -169,7 +169,7 @@ and move the `ase` binary somewhere on your `PATH` (e.g. `/usr/local/bin`).
 **PowerShell installer:**
 
 ```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://github.com/steph-crown/ase/releases/download/v0.2.0/ase-shell-installer.ps1 | iex"
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/steph-crown/ase/releases/download/v0.2.2/ase-shell-installer.ps1 | iex"
 ```
 
 You can also download the `.zip` or `.msi` for your architecture from the

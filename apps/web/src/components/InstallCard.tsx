@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 export const installationCommands = {
   mac: "brew install steph-crown/tap/ase-shell",
   linux:
-    "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/steph-crown/ase/releases/download/v0.2.0/ase-shell-installer.sh | sh",
+    "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/steph-crown/ase/releases/download/v0.2.2/ase-shell-installer.sh | sh",
   windows:
-    "powershell -ExecutionPolicy Bypass -c \"irm https://github.com/steph-crown/ase/releases/download/v0.2.0/ase-shell-installer.ps1 | iex\"",
+    "powershell -ExecutionPolicy Bypass -c \"irm https://github.com/steph-crown/ase/releases/download/v0.2.2/ase-shell-installer.ps1 | iex\"",
   npm: "npm install -g ase-shell",
   cargo: "cargo install ase-shell",
 };
